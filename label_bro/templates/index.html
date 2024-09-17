@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="print-button-container">
+    <button class="full-width-button" onclick="printLabels()">Print</button>
+</div>
+<div class="print-button-container">
+    <small>Each line defines 1 or more labels.</small><br>
+    <small>Use checkboxes for sizes.</small><br>
+    <small>Use format 'text; number' (e.g. 'My Stuff; 4) to print multiple copies.</small>
+</div>
+<div class="main-container">
+    <div class="textarea-container">
+        <form id="labelForm">
+            <label for="printFullLabel" class="checkboxLabel">
+                <input type="checkbox" id="printFullLabel" name="printFullLabel" value="printSmallLabel" checked>
+                Big Label?
+            </label>
+            <label for="printSmallLabel" class="checkboxLabel">
+                <input type="checkbox" id="printSmallLabel" name="printSmallLabel" value="printSmallLabel" checked>
+                Small Label?
+            </label>
+            <textarea id="labelText" name="labelText" rows="10" cols="50"></textarea>
+        </form>
+    </div>
+    <div class="previews-container">
+        <h2>Preview</h2>
+        <div id="labelPreviews" class="flex-container"></div>
+    </div>
+</div>
+<div class="print-button-container">
+    <button class="full-width-button" onclick="printLabels()">Print</button>
+</div>
+<p id="waiting"></p>
+<p id="response"></p>
+{% endblock %}

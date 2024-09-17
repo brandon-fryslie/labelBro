@@ -1,0 +1,7 @@
+brother_ql
+Flask
+Pillow
+pycairo
+pytest
+pyusb
+tox
