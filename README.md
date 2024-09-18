@@ -14,11 +14,52 @@ with any printer supported by this library: https://github.com/pklaus/brother_ql
 
 ## Usage
 
+
+### venv
+
+There are many more complicated ways to use venv so feel free to use one of them if you're familiar.
+
 ```shell
 cd <repo>
+
+# make a venv
+python3 -m venv venv
+
+# activate venv
+. ./venv/bin/activate
+
+# install dependencies
 python3 -m pip install -r requirements.txt
+
+# run the app
+# Note: by default this makes the application available over the local network so you can use it from your phone or ipad
 python3 -m label_bro.app
+
+# you will see some text like this:
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5099
+ * Running on http://192.168.7.83:5099
+
+# open the webapp (this probably only works on MacOS, for other OSes paste the url into your browser)
+# Note: the 127 address will only work on the machine hosting the application.  Use the 192 address for network access
+open http://127.0.0.1:5099
 ```
+
+Now type some stuff into the text field.  A few seconds after you stop typing, the previews will appear.
+
+Enter multiple lines for multiple labels.  Use the `my-text; 5` syntax to print multiple labels.  Note you will be unable to print labels
+containing a semicolon and whitespace is not significant (`my-text:5` is equivalent to `my-text:       5`).
+
+Press the big `Print` button to print your labels.  The printer must be connected to the host via USB and powered on.
+
+Note: you can prevent your printer from turning off automatically after an hour by using Brother's configuration utility.
+
+### system python
+
+It is not recommended you do this.  Run `python3 -m pip install venv` to install the virtualenv package and follow the venv instructions.
+
+If you really want to, just run `python3 -m label_bro.app` repeatedly and install whatever dependencies it complains about until it works.
+The instructions may vary based on OS.
 
 ### Functionality
 
