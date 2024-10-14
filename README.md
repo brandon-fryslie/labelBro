@@ -52,7 +52,7 @@ containing a semicolon and whitespace is not significant (`my-text:5` is equival
 
 Press the big `Print` button to print your labels.  The printer must be connected to the host via USB and powered on.
 
-Note: you can prevent your printer from turning off automatically after an hour by using Brother's configuration utility.
+Note: you can prevent your printer from turning off automatically after an hour by using Brother's firmware updater app.
 
 ### system python
 
