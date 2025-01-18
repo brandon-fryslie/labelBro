@@ -1,0 +1,11 @@
+/drop
+/add       label_bro/__init__.py
+/add       label_bro/app.py
+/add       label_bro/cli.py
+/add       label_bro/static/css/style.css
+/add       label_bro/static/js/app.js
+/add       label_bro/templates/base.html
+/add       label_bro/templates/index.html
+/add       label_bro/utils/__init__.py
+/add       label_bro/utils/label_creation.py
+/add       label_bro/utils/printer_utils.py

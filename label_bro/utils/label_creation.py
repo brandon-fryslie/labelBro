@@ -1,6 +1,6 @@
 import base64
 import io
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import cairo
 
@@ -143,7 +143,7 @@ def create_small_label_image(text: str, width: int) -> Tuple[Optional[cairo.Imag
 
 
 # Two label types: small and full (small = single line, full = full width)
-def process_label(text: str, width: int, label_type: str) -> Optional[Exception]:
+def process_label(text: str, width: int, label_type: str) -> Optional[Union[Exception, dict]]:
     if label_type == 'full':
         image, error = create_full_width_label_image(text, width)
     else:
@@ -153,8 +153,7 @@ def process_label(text: str, width: int, label_type: str) -> Optional[Exception]
         return error
 
     instructions = printer_utils.convert_image_to_instructions(image)
-    printer_utils.send_instructions(instructions)
-    return None
+    return printer_utils.send_instructions(instructions)
 
 
 def img_to_base64(surface: cairo.ImageSurface) -> str:

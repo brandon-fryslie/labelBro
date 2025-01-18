@@ -5,7 +5,6 @@ from typing import List, Dict
 import flask
 from label_bro.utils import printer_utils
 from label_bro.utils import label_creation
-import usb.core
 
 app = flask.Flask(__name__)
 
@@ -81,16 +80,18 @@ def print_labels_endpoint():
 
         for i in range(repeat_times):
             if should_print_full:
-                error = label_creation.process_label(label_text, LABEL_WIDTH, 'full')
-                if error:
-                    errors.append(str(error))
+                status = label_creation.process_label(label_text, LABEL_WIDTH, 'full')
+                if status:
+                    errors.append(str(status))
 
             if should_print_small:
-                error = label_creation.process_label(label_text, LABEL_WIDTH, 'small')
-                if error:
-                    errors.append(str(error))
+                status = label_creation.process_label(label_text, LABEL_WIDTH, 'small')
+                if status:
+                    errors.append(str(status))
 
-    return flask.jsonify({'status': 'Labels printed successfully'}), 200
+    # check all the errors
+
+    return flask.jsonify({'status': f'Label status: {status}'}), 200
 
 
 @app.route('/previewLabels', methods=['POST'])

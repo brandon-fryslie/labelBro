@@ -14,6 +14,17 @@ with any printer supported by this library: https://github.com/pklaus/brother_ql
 
 ## Usage
 
+### pyenv
+
+First we need a Python.  Don't use system python.  It can cause problems and it's old.  Instead, install `pyenv` via the following steps:
+
+- `brew install pyenv`
+- Run `pyenv init` and copy the non-comment lines.  Then paste them into your .zshrc and open a new shell
+- Run `pyenv install 3.12` (or whichever version of python you want)
+- Make that your global default: `pyenv global 3.12`
+- Run `which python3`.  It should print something like `/Users/my-username/.pyenv/shims/python3`.  If it doesn't, retry the previous steps until it works.
+
+The following steps will assume you are using a standard non-system python installed via pyenv.
 
 ### venv
 
@@ -28,8 +39,17 @@ python3 -m venv venv
 # activate venv
 . ./venv/bin/activate
 
-# install dependencies
+# install brew dependencies
+brew install cairo libusb
+
+# symlink brew libs
+ln -s /opt/homebrew/lib ~/lib
+
+# install python dependencies
 python3 -m pip install -r requirements.txt
+
+# note: if pyusb is installed before libusb, remove and reinstall it
+python3 -m pip uninstall pyusb; python3 -m pip install pyusb
 
 # run the app
 # Note: by default this makes the application available over the local network so you can use it from your phone or ipad
@@ -55,6 +75,9 @@ Press the big `Print` button to print your labels.  The printer must be connecte
 Note: you can prevent your printer from turning off automatically after an hour by using Brother's firmware updater app.
 
 ### system python
+
+Don't bother using system python.  Just install `pyenv`, install a python (e.g., `pyenv install 3.12`), then
+use that globally (e.g., `pyenv global 3.12`).  Make sure to insert the pyenv code into your .zshrc file (run `pyenv init`, paste the non-comment lines into your .zshrc file) and open a new shell.
 
 It is not recommended you do this.  Run `python3 -m pip install venv` to install the virtualenv package and follow the venv instructions.
 
