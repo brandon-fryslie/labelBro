@@ -7,7 +7,7 @@ const DEBOUNCE_DELAY = 2000;
 
 // Main initialization function
 function init() {
-  console.log("initializing all the junk")
+  logResponse("initializing all the junk");
   setupLabelTextAreaListener();
 }
 
@@ -25,7 +25,7 @@ function setupLabelTextAreaListener() {
 
 // Fetch label previews from the server
 async function fetchLabelPreviews(labelText) {
-  console.log("fetching label previews")
+  logResponse("fetching label previews");
   try {
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
@@ -46,7 +46,7 @@ async function fetchLabelPreviews(labelText) {
     const data = await response.json();
     return data;
   } catch (error) {
-    handleError(error);
+    logResponse(`Error: ${error.message}`);
     return null;
   }
 }
@@ -114,8 +114,15 @@ function createLabelPairElement(index, fullLabel, smallLabel) {
 
 // Handle and display errors
 function handleError(error) {
-  console.error('Error:', error.message);
-  responseElement.innerText = 'Error: ' + error.message;
+  logResponse('Error: ' + error.message);
+}
+
+function logResponse(text) {
+  const timestamp = new Date().toLocaleString();
+  const responseContainer = document.getElementById('response');
+  const responseDiv = document.createElement('div');
+  responseDiv.textContent = `${timestamp}: ${text}`;
+  responseContainer.prepend(responseDiv);
 }
 
 
@@ -124,7 +131,7 @@ function printLabels() {
   const shouldPrintFullLabel = document.getElementById('printFullLabel').checked
   const shouldPrintSmallLabel = document.getElementById('printSmallLabel').checked
 
-  console.log(`printing labels.  print full: ${shouldPrintFullLabel}, print small: ${shouldPrintSmallLabel}`)
+  logResponse(`printing labels.  print full: ${shouldPrintFullLabel}, print small: ${shouldPrintSmallLabel}`);
 
   document.getElementById('waiting').innerText = "Waiting for response..."
 
@@ -145,34 +152,132 @@ function printLabels() {
     .then(data => {
       document.getElementById('waiting').innerText = '';
 
-      const responseContainer = document.getElementById('response');
-
-      // Get the current timestamp
-      const timestamp = new Date().toLocaleString();
-
-      // Create a new div element for the response message
-      const responseDiv = document.createElement('div');
-      responseDiv.textContent = `${timestamp}: ${JSON.stringify(data, null, 2)}`;
-
-      // Prepend the new message to the container
-      responseContainer.prepend(responseDiv);
+      logResponse(`${JSON.stringify(data, null, 2)}`);
     })
-    .catch(error => {
+    .catch(async (error) => {
+        const response = await error.response.json();
+        const data = response || {};
       document.getElementById('waiting').innerText = '!!! ERROR !!!';
 
-      const responseContainer = document.getElementById('response');
-
-      // Get the current timestamp
-      const timestamp = new Date().toLocaleString();
-
-      // Create a new div element for the error message
-      const errorDiv = document.createElement('div');
-      errorDiv.textContent = `${timestamp}: Error: ${error}`;
-
-      // Prepend the new message to the container
-      responseContainer.prepend(errorDiv);
+      logResponse(`Error: ${error.message}`);
+      if (data && data.details) {
+          logResponse(`Details: ${data.details}`);
+      }
     });
 }
 
-// Initialize the script
+async function submitAIText() {
+    const aiText = document.getElementById('aiText').value.trim();
+    if (!aiText) {
+        alert('Please enter a prompt before submitting.');
+        return;
+    }
+    logResponse(`Submitting prompt to OpenAI...`);
+
+    try {
+        logResponse(`Awaiting response from OpenAI...`);
+        const response = await fetch('/aiGenerate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prompt: aiText })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            logResponse(`Error: ${data.error || 'Unknown error'}`);
+            if (data.details) {
+                logResponse(`Details: ${data.details}`);
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        if (data.image) {
+            updatePreviewWithGeneratedImage(data.image);
+        }
+        if (data.error) {
+            logResponse(`Error: ${data.error}`);
+        }
+        if (data.details) {
+            logResponse(`Details: ${data.details}`);
+        }
+        if (data.code) {
+            const apiResponseLog = document.getElementById('apiResponseLog');
+            const responseDiv = document.createElement('pre');
+            responseDiv.className = 'language-python';
+            const codeElement = document.createElement('code');
+            codeElement.className = 'language-python';
+            codeElement.textContent = data.code;
+            responseDiv.appendChild(codeElement);
+            apiResponseLog.prepend(responseDiv);
+
+            // Highlight the code using Prism.js
+            Prism.highlightElement(codeElement);
+
+            generatedCode = data.code;
+            logResponse(`AI Generated Code: ${data.code}`);
+        }
+    } catch (error) {
+        const data = error.response ? await error.response.json() : {};
+        logResponse(`Error: ${error.message}`);
+        if (data && data.details) {
+            logResponse(`Details: ${data.details}`);
+        }
+        if (data && data.response) {
+            logResponse(`Response: ${data.response}`);
+        }
+    }
+}
+
+let generatedCode = '';
+
+// Function to execute the generated code
+async function executeGeneratedCode() {
+    if (!generatedCode) {
+        logResponse('No code to execute. Please generate code first.');
+        return;
+    }
+
+    try {
+        logResponse('Executing generated code...');
+        const response = await fetch('/executeCode', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ code: generatedCode })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            logResponse(`Error: ${data.error || 'Unknown error'}`);
+            if (data.details) {
+                logResponse(`Details: ${data.details}`);
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        if (data.error) {
+            logResponse(`Error: ${data.error}`);
+        }
+        if (data.details) {
+            logResponse(`Details: ${data.details}`);
+        }
+        if (data.status) {
+            logResponse(data.status);
+        }
+    } catch (error) {
+        logResponse(`Execution error: ${error.message}`);
+    }
+}
+function updatePreviewWithGeneratedImage(imageData) {
+    const previewsContainer = document.getElementById('labelPreviews');
+    const imgElement = document.createElement('img');
+    imgElement.src = imageData;
+    imgElement.alt = 'Generated Image Preview';
+    previewsContainer.innerHTML = ''; // Clear previous previews
+    previewsContainer.appendChild(imgElement);
+}
+
 init();

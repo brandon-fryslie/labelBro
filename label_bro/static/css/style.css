@@ -16,11 +16,23 @@
     margin-right: 5px;
 }
 
-.main-container {
+.ai-generate-container {
     display: flex;
-    flex-wrap: wrap;
-    gap: 20px; /* Space between textarea and previews */
-    width: 100%;
+    flex-direction: row;
+    gap: 20px;
+}
+
+.ai-input-container {
+    flex: 1;
+}
+
+.api-response-log {
+    flex: 1;
+    border: 1px solid #ccc;
+    padding: 10px;
+    overflow-y: auto;
+    max-height: 400px; /* Increase the height to show more content */
+    font-size: 0.9rem; /* Reduce the font size */
 }
 
 .full-width-button {

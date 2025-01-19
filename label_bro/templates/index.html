@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="ai-generate-container">
+    <div class="ai-input-container">
+        <textarea id="aiText" name="aiText" rows="5" cols="50" placeholder="Enter your prompt here...">generate an image of a dog</textarea>
+        <button class="full-width-button" onclick="submitAIText()">Submit</button>
+        <button class="full-width-button" onclick="executeGeneratedCode()">Generate</button>
+    </div>
+    <div id="apiResponseLog" class="api-response-log"></div>
+</div>
 <div class="print-button-container">
     <button class="full-width-button" onclick="printLabels()">Print</button>
 </div>
