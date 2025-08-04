@@ -1,13 +1,31 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="ai-generate-container">
-    <div class="ai-input-container">
-        <textarea id="aiText" name="aiText" rows="5" cols="50" placeholder="Enter your prompt here...">generate an image of a dog</textarea>
-        <button class="full-width-button" onclick="submitAIText()">Submit</button>
-        <button class="full-width-button" onclick="executeGeneratedCode()">Generate</button>
+<div class="printer-selection-container">
+    <div class="printer-selector">
+        <div class="printer-selector-header">
+            <label for="printerSelect">Select Printer:</label>
+            <button id="refreshPrinters" class="refresh-button" onclick="refreshPrinters()">🔄 Refresh</button>
+        </div>
+        <select id="printerSelect" name="printerSelect">
+            <option value="">Loading printers...</option>
+        </select>
+        <div id="printerStatus" class="printer-status"></div>
+        <div id="discoveryStatus" class="discovery-status"></div>
     </div>
-    <div id="apiResponseLog" class="api-response-log"></div>
+    
+    <div class="manual-connection">
+        <div class="manual-connection-header">
+            <h3>Manual Connection</h3>
+            <small>Enter an IP address (e.g., 192.168.1.100) or subnet (e.g., 192.168.1.0/24)</small>
+        </div>
+        <div class="manual-connection-input">
+            <input type="text" id="manualTarget" placeholder="192.168.1.100 or 192.168.1.0/24" />
+            <button id="testConnection" onclick="testManualConnection()">Test Connection</button>
+        </div>
+        <div id="manualConnectionStatus" class="manual-connection-status"></div>
+        <div id="manualConnectionResults" class="manual-connection-results"></div>
+    </div>
 </div>
 <div class="print-button-container">
     <button class="full-width-button" onclick="printLabels()">Print</button>

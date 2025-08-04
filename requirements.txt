@@ -5,3 +5,4 @@ pycairo
 pytest
 pyusb
 tox
+zeroconf

@@ -2,13 +2,21 @@
 const labelTextArea = document.getElementById('labelText');
 const previewsContainer = document.getElementById('labelPreviews');
 const responseElement = document.getElementById('response');
+const printerSelect = document.getElementById('printerSelect');
+const printerStatus = document.getElementById('printerStatus');
+const discoveryStatus = document.getElementById('discoveryStatus');
+const refreshButton = document.getElementById('refreshPrinters');
 const API_ENDPOINT = '/previewLabels';
+const PRINTERS_ENDPOINT = '/printers';
+const DISCOVERY_ENDPOINT = '/printers/discover';
 const DEBOUNCE_DELAY = 2000;
 
 // Main initialization function
 function init() {
-  logResponse("initializing all the junk");
+  logResponse("initializing label bro");
   setupLabelTextAreaListener();
+  loadPrinters();
+  setupPrinterChangeListener();
 }
 
 // Set up event listener with debounce for textarea input
@@ -126,12 +134,194 @@ function logResponse(text) {
 }
 
 
+// Load available printers
+async function loadPrinters() {
+  try {
+    const response = await fetch(PRINTERS_ENDPOINT);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to load printers');
+    }
+
+    populatePrinterDropdown(data.printers);
+  } catch (error) {
+    logResponse(`Error loading printers: ${error.message}`);
+    printerSelect.innerHTML = '<option value="">Error loading printers</option>';
+  }
+}
+
+// Populate the printer dropdown
+function populatePrinterDropdown(printers) {
+  printerSelect.innerHTML = '';
+
+  const printerCount = Object.keys(printers).length;
+  if (printerCount === 0) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'No printers found - click Refresh to discover';
+    option.selected = true;
+    printerSelect.appendChild(option);
+    updatePrinterStatus({});
+    return;
+  }
+
+  let hasConnectedPrinter = false;
+  for (const [printerId, printer] of Object.entries(printers)) {
+    // Only show actually connected printers
+    if (printer.is_connected) {
+      const option = document.createElement('option');
+      option.value = printerId;
+      option.textContent = printer.display_name;
+
+      if (!hasConnectedPrinter) {
+        option.selected = true;
+        hasConnectedPrinter = true;
+      }
+
+      printerSelect.appendChild(option);
+    }
+  }
+
+  if (!hasConnectedPrinter) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'No available printers - click Refresh';
+    option.selected = true;
+    printerSelect.appendChild(option);
+  }
+
+  updatePrinterStatus(printers);
+}
+
+// Update printer status display
+function updatePrinterStatus(printers) {
+  const selectedPrinterId = printerSelect.value;
+  if (!selectedPrinterId || !printers[selectedPrinterId]) {
+    printerStatus.innerHTML = '<span class="error">No printer selected</span>';
+    return;
+  }
+
+  const printer = printers[selectedPrinterId];
+  console.log(printer)
+  const statusClass = printer.is_connected ? 'connected' : 'disconnected';
+  const statusText = printer.is_connected ? 'Connected' : 'Disconnected';
+  const displayId = printer.id;
+  const mediaText = printer.media_info || 'No media info';
+
+  printerStatus.innerHTML = `
+    <span class="${statusClass}">${statusText}</span> | 
+    <span class="media-info">Media: ${mediaText}</span>
+    <span class="displayId">ID: ${displayId}</span>
+  `;
+}
+
+// Set up printer change listener
+function setupPrinterChangeListener() {
+  printerSelect.addEventListener('change', async () => {
+    const printers = await fetchPrinters();
+    if (printers) {
+      updatePrinterStatus(printers);
+    }
+  });
+}
+
+// Fetch current printer status
+async function fetchPrinters() {
+  try {
+    const response = await fetch(PRINTERS_ENDPOINT);
+    const data = await response.json();
+    return response.ok ? data.printers : null;
+  } catch (error) {
+    logResponse(`Error fetching printers: ${error.message}`);
+    return null;
+  }
+}
+
+// Refresh printers with network discovery
+async function refreshPrinters() {
+  if (refreshButton) {
+    refreshButton.disabled = true;
+    refreshButton.textContent = '🔄 Discovering...';
+  }
+
+  if (discoveryStatus) {
+    discoveryStatus.textContent = 'Scanning network for printers...';
+    discoveryStatus.className = 'discovery-status discovering';
+  }
+
+  logResponse('Starting printer discovery...');
+
+  try {
+    const response = await fetch(DISCOVERY_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Discovery failed');
+    }
+
+    // Update the printer dropdown with discovered printers
+    populatePrinterDropdown(data.printers);
+
+    // Show discovery results
+    const printerCount = Object.keys(data.printers).length;
+    const connectedCount = Object.values(data.printers).filter(p => p.is_connected).length;
+
+    if (discoveryStatus) {
+      discoveryStatus.textContent = `Found ${printerCount} printers (${connectedCount} connected)`;
+      discoveryStatus.className = 'discovery-status success';
+    }
+
+    // Show discovery methods
+    const methods = data.discovery_methods;
+    const methodStatus = [];
+    if (methods.mdns) methodStatus.push('mDNS');
+    if (methods.network_scan) methodStatus.push('Network Scan');
+    if (methods.usb) methodStatus.push('USB');
+
+    logResponse(`Discovery complete: ${printerCount} printers found using ${methodStatus.join(', ')}`);
+
+  } catch (error) {
+    logResponse(`Discovery error: ${error.message}`);
+
+    if (discoveryStatus) {
+      discoveryStatus.textContent = `Discovery failed: ${error.message}`;
+      discoveryStatus.className = 'discovery-status error';
+    }
+  } finally {
+    if (refreshButton) {
+      refreshButton.disabled = false;
+      refreshButton.textContent = '🔄 Refresh';
+    }
+
+    // Clear discovery status after a delay
+    if (discoveryStatus) {
+      setTimeout(() => {
+        discoveryStatus.textContent = '';
+        discoveryStatus.className = 'discovery-status';
+      }, 5000);
+    }
+  }
+}
+
 function printLabels() {
   const labelText = document.getElementById('labelText').value;
-  const shouldPrintFullLabel = document.getElementById('printFullLabel').checked
-  const shouldPrintSmallLabel = document.getElementById('printSmallLabel').checked
+  const shouldPrintFullLabel = document.getElementById('printFullLabel').checked;
+  const shouldPrintSmallLabel = document.getElementById('printSmallLabel').checked;
+  const selectedPrinterId = printerSelect.value;
 
-  logResponse(`printing labels.  print full: ${shouldPrintFullLabel}, print small: ${shouldPrintSmallLabel}`);
+  if (!selectedPrinterId) {
+    logResponse('Error: No printer selected');
+    return;
+  }
+
+  logResponse(`printing labels on ${selectedPrinterId}. print full: ${shouldPrintFullLabel}, print small: ${shouldPrintSmallLabel}`);
 
   document.getElementById('waiting').innerText = "Waiting for response..."
 
@@ -145,13 +335,13 @@ function printLabels() {
         text: labelText,
         shouldPrintFullLabel: shouldPrintFullLabel,
         shouldPrintSmallLabel: shouldPrintSmallLabel,
+        printer_id: selectedPrinterId
       }
     })
   })
     .then(response => response.json())
     .then(data => {
       document.getElementById('waiting').innerText = '';
-
       logResponse(`${JSON.stringify(data, null, 2)}`);
     })
     .catch(async (error) => {
@@ -166,118 +356,104 @@ function printLabels() {
     });
 }
 
-async function submitAIText() {
-    const aiText = document.getElementById('aiText').value.trim();
-    if (!aiText) {
-        alert('Please enter a prompt before submitting.');
-        return;
+// Manual Connection Functions
+async function testManualConnection() {
+  const target = document.getElementById('manualTarget').value.trim();
+  const statusDiv = document.getElementById('manualConnectionStatus');
+  const resultsDiv = document.getElementById('manualConnectionResults');
+  const button = document.getElementById('testConnection');
+
+  if (!target) {
+    showManualConnectionStatus('error', 'Please enter an IP address or subnet');
+    return;
+  }
+
+  // Disable button and show testing status
+  button.disabled = true;
+  button.textContent = 'Testing...';
+  showManualConnectionStatus('testing', `Testing connection to ${target}...`);
+  resultsDiv.innerHTML = '';
+
+  try {
+    const response = await fetch('/printers/test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ target: target })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      handleManualConnectionResult(result);
+    } else {
+      showManualConnectionStatus('error', result.error || 'Connection test failed');
     }
-    logResponse(`Submitting prompt to OpenAI...`);
 
-    try {
-        logResponse(`Awaiting response from OpenAI...`);
-        const response = await fetch('/aiGenerate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ prompt: aiText })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            logResponse(`Error: ${data.error || 'Unknown error'}`);
-            if (data.details) {
-                logResponse(`Details: ${data.details}`);
-            }
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        if (data.image) {
-            updatePreviewWithGeneratedImage(data.image);
-        }
-        if (data.error) {
-            logResponse(`Error: ${data.error}`);
-        }
-        if (data.details) {
-            logResponse(`Details: ${data.details}`);
-        }
-        if (data.code) {
-            const apiResponseLog = document.getElementById('apiResponseLog');
-            const responseDiv = document.createElement('pre');
-            responseDiv.className = 'language-python';
-            const codeElement = document.createElement('code');
-            codeElement.className = 'language-python';
-            codeElement.textContent = data.code;
-            responseDiv.appendChild(codeElement);
-            apiResponseLog.prepend(responseDiv);
-
-            // Highlight the code using Prism.js
-            Prism.highlightElement(codeElement);
-
-            generatedCode = data.code;
-            logResponse(`AI Generated Code: ${data.code}`);
-        }
-    } catch (error) {
-        const data = error.response ? await error.response.json() : {};
-        logResponse(`Error: ${error.message}`);
-        if (data && data.details) {
-            logResponse(`Details: ${data.details}`);
-        }
-        if (data && data.response) {
-            logResponse(`Response: ${data.response}`);
-        }
-    }
+  } catch (error) {
+    showManualConnectionStatus('error', `Network error: ${error.message}`);
+  } finally {
+    // Re-enable button
+    button.disabled = false;
+    button.textContent = 'Test Connection';
+  }
 }
 
-let generatedCode = '';
-
-// Function to execute the generated code
-async function executeGeneratedCode() {
-    if (!generatedCode) {
-        logResponse('No code to execute. Please generate code first.');
-        return;
-    }
-
-    try {
-        logResponse('Executing generated code...');
-        const response = await fetch('/executeCode', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ code: generatedCode })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            logResponse(`Error: ${data.error || 'Unknown error'}`);
-            if (data.details) {
-                logResponse(`Details: ${data.details}`);
-            }
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        if (data.error) {
-            logResponse(`Error: ${data.error}`);
-        }
-        if (data.details) {
-            logResponse(`Details: ${data.details}`);
-        }
-        if (data.status) {
-            logResponse(data.status);
-        }
-    } catch (error) {
-        logResponse(`Execution error: ${error.message}`);
-    }
+function showManualConnectionStatus(type, message) {
+  const statusDiv = document.getElementById('manualConnectionStatus');
+  statusDiv.className = `manual-connection-status ${type}`;
+  statusDiv.textContent = message;
 }
-function updatePreviewWithGeneratedImage(imageData) {
-    const previewsContainer = document.getElementById('labelPreviews');
-    const imgElement = document.createElement('img');
-    imgElement.src = imageData;
-    imgElement.alt = 'Generated Image Preview';
-    previewsContainer.innerHTML = ''; // Clear previous previews
-    previewsContainer.appendChild(imgElement);
+
+function handleManualConnectionResult(result) {
+  const resultsDiv = document.getElementById('manualConnectionResults');
+
+  if (result.success && result.printers_found.length > 0) {
+    showManualConnectionStatus('success',
+      `Found ${result.printers_found.length} Brother printer(s) at ${result.target}`);
+
+    // Display printer details
+    let resultsHtml = '';
+    result.printers_found.forEach(printer => {
+      const isValid = printer.media_loaded && printer.printer_ready;
+      resultsHtml += `
+        <div class="printer-result ${isValid ? 'valid' : 'invalid'}">
+          <h4>${printer.model} at ${printer.ip}</h4>
+          <div class="media-info">
+            Model: ${printer.model}<br>
+            ${printer.media_width ? `Media Width: ${printer.media_width}<br>` : ''}
+            ${printer.media_type ? `Media Type: ${printer.media_type}<br>` : ''}
+          </div>
+          <div class="media-status ${printer.media_loaded ? 'loaded' : 'not-loaded'}">
+            ${printer.media_loaded ? 
+              `✓ Media loaded and ready` : 
+              `⚠ No media detected or printer not ready`}
+          </div>
+          ${!isValid ? '<small>Note: Only printers with loaded media are considered valid connections</small>' : ''}
+        </div>
+      `;
+    });
+    resultsDiv.innerHTML = resultsHtml;
+
+  } else {
+    if (result.error) {
+      showManualConnectionStatus('error', result.error);
+    } else {
+      showManualConnectionStatus('error',
+        `No Brother printers found at ${result.target}`);
+    }
+    resultsDiv.innerHTML = '';
+  }
 }
+
+// Allow Enter key to trigger test
+document.getElementById('manualTarget').addEventListener('keypress', function(event) {
+  if (event.key === 'Enter') {
+    testManualConnection();
+  }
+});
+
+// AI-related functions removed for multiple printer support
 
 init();
