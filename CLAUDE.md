@@ -1,92 +1,84 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Agent Workflow Overview
 
-## Project Overview
+Repeat until `.ai_project/<active-project>/TODO.md` is empty:
 
-LabelBro is a Flask web application for generating and printing labels on Brother QL-800 Label Printers. The app generates live previews of labels as users type and supports multiple label formats (full-width and small labels).
+1. Plan → `/plan-next-step` selects highest-priority backlog task.
+2. Implement → `/implement-item` implements selected task.
+3. Test → `/retest` runs tests, identifies and fixes regressions.
+4. Refactor → `/refactor` simplifies code, improves tests, reduces complexity.
+5. Validate UX → `/validate-ux` ensures intuitive documented user flows.
+6. Track → `/status` updates project STATUS.md and repository-level milestones.
 
-## Architecture
+Switch to Stabilization Mode if stability KPI falls below threshold:
+- Prioritize regression fixes, test failures, and complexity reduction.
 
-### Core Components
-- **Flask Web App** (`label_bro/app.py`): Main web server with endpoints for label preview and printing
-- **Label Creation** (`label_bro/utils/label_creation.py`): Cairo-based image generation for full-width and small labels
-- **Printer Utils** (`label_bro/utils/printer_utils.py`): Direct printer communication using brother_ql library
-- **Frontend** (`label_bro/static/js/app.js` + `label_bro/templates/index.html`): Live preview interface with debounced updates
+## Repository-Level Files
 
-### Key Technical Details
-- Uses Cairo (pycairo) for high-quality label image rendering
-- Labels are 62mm wide (696px at printer resolution)
-- Full-width labels split text into multiple lines with Impact font
-- Small labels use single-line text with dynamic font sizing
-- Real-time preview generation via AJAX endpoints
-- Special syntax for multiple copies: "text; 5" prints 5 labels
+- `PROJECT.md`: Overall architecture, goals, dependencies, active projects.
+- `BACKLOG.md`: Project roadmap (names/descriptions only).
+- `TODO.md`: Name of currently active project.
+- `PROGRESS.md`: Cross-project milestones, stability metrics, architectural health.
+- `DEPRECATED.md`: Auto-updated list of deprecated components.
 
-### Printer Discovery
-- **SNMP Broadcast Discovery**: Primary method using custom lightweight SNMP implementation
-- **SNMP Targeted Discovery**: Scans only current /24 subnet when broadcast fails
-- **Manual Connection Testing**: UI for testing specific IP addresses or subnets
-- **Media Detection**: Verifies printer has media loaded before considering it valid
-- **mDNS/Bonjour Discovery**: Uses zeroconf for service discovery
-- **Network Port Scanning**: Final fallback scanning port 9100
-- **USB Discovery**: Automatic detection of USB-connected Brother printers
-- All discovered printers are verified for connectivity and media status before being listed
+## Project-Level Files (`.ai_project/<project>/`)
 
-## Development Commands
+- `PROJECT.md`: Goals, features, requirements.
+- `BACKLOG.md`: Task backlog.
+- `TODO.md`: Immediate next-step tasks.
+- `STATUS.md`: Completion log, notes, test results, complexity metrics.
 
-### Environment Setup
-```bash
-# Create and activate virtual environment
-python3 -m venv venv
-. ./venv/bin/activate
+## Extended Loop Automation & Self-Correction
 
-# Install system dependencies (macOS)
-brew install cairo libusb
-ln -s /opt/homebrew/lib ~/lib
+Automated "Signal Collector" generates backlog tasks:
 
-# Install Python dependencies
-python3 -m pip install -r requirements.txt
+- **Test & Stability Monitoring**
+    - Runs pytest suite, logs failures, flags recurring issues.
 
-# Fix pyusb if needed
-python3 -m pip uninstall pyusb; python3 -m pip install pyusb
-```
+- **Dead-Code & Deprecation Detection**
+    - Detect unused/deprecated code; updates DEPRECATED.md.
 
-### Running the Application
-```bash
-# Start Flask development server
-python3 -m label_bro.app
+- **Documentation Drift Detection**
+    - Detect mismatches between documentation and implementation.
 
-# Run CLI tool
-python3 -m label_bro.cli
-```
+- **Telemetry-Based UX Monitoring**
+    - Analyze usage/error logs; flags underused/confusing features.
 
-### Testing
-```bash
-# Run tests with pytest
-pytest
+- **Architectural Integrity Tests**
+    - Verify defined architectural boundaries.
 
-# Run tests with tox (multiple Python versions)
-tox
-```
+## Priority Escalation Rules
 
-## Hardware Requirements
+- Tasks failing ≥3 cycles escalate to high priority.
+- Stabilization Mode triggered by KPI thresholds:
+    - Test pass rate < 95%
+    - UX violations detected
+    - Complexity trends negatively
 
-- Brother QL-800 Label Printer (or compatible brother_ql supported printer)
-- 62mm label tape
-- USB connection to host machine
-- Printer must be powered on for printing functionality
+## Testing & Quality Assurance Standards
 
-## API Endpoints
+- Behavior-driven tests auto-generated from documentation.
+- Use pytest with parameterization and fixtures.
+- Integration tests confirm realistic interactions.
+- No tautological mocks.
 
-- `/` - Main web interface
-- `/printers` - GET: List available printers
-- `/printers/discover` - POST: Run full printer discovery
-- `/printers/test` - POST: Test manual connection to IP or subnet
-- `/preview` - POST: Generate label preview images
-- `/print_labels` - POST: Send labels to printer
+Follow `TESTING.md` for execution instructions.
 
-## Special Syntax
+## Python Environment Management
 
-- Multiple copies: "My Label; 5" creates 5 copies
-- Checkboxes control label types (full-width, small, or both)
-- Each line in textarea creates separate labels
+- Use `uv` for virtual environments and dependency management.
+- Explicitly use `python3`.
+- Activate via `source .venv/bin/activate`.
+
+## Simulated Functionality Rule
+
+- Placeholder functionality permitted for scaffolding only.
+- Replace with production implementations before marking complete.
+- Flag any "Simulated" or "TODO: implement" code as incomplete.
+
+## Code Quality Standards
+
+Refer to `.ai_project/CONVENTIONS.md`.
+
+## Directory Structure
