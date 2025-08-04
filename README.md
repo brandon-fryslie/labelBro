@@ -65,6 +65,38 @@ python3 -m label_bro.app
 open http://127.0.0.1:5099
 ```
 
+### Modern Development Workflow (Recommended)
+
+For the best development experience, use the included `justfile` which provides a modern Make-like workflow:
+
+```shell
+# Install just command runner (one time setup)
+# macOS: brew install just
+# Other platforms: https://github.com/casey/just#installation
+
+# Start both TypeScript watcher AND Python server in parallel
+just dev
+
+# This command will:
+# - Start TypeScript watcher for live type checking
+# - Start the Flask development server
+# - Show colored output from both services
+# - Stop both when you press Ctrl+C
+
+# Other useful commands:
+just status    # Check project status and dependencies
+just setup     # Install all dependencies (Python + Node)
+just test      # Run all tests (Python + TypeScript)
+just typecheck # Type check TypeScript only
+just clean     # Clean build artifacts
+```
+
+The `just dev` command is the recommended way to develop as it provides:
+- Live TypeScript type checking as you edit
+- Automatic Flask reloading on Python changes  
+- Color-coded output to distinguish TypeScript vs Python logs
+- Single command to start/stop both services
+
 Now type some stuff into the text field.  A few seconds after you stop typing, the previews will appear.
 
 Enter multiple lines for multiple labels.  Use the `my-text; 5` syntax to print multiple labels.  Note you will be unable to print labels
@@ -73,6 +105,26 @@ containing a semicolon and whitespace is not significant (`my-text:5` is equival
 Press the big `Print` button to print your labels.  The printer must be connected to the host via USB and powered on.
 
 Note: you can prevent your printer from turning off automatically after an hour by using Brother's firmware updater app.
+
+### TypeScript Development (Optional)
+
+The frontend JavaScript has been converted to TypeScript for improved type safety and development experience. This is optional for basic usage but recommended for development.
+
+```shell
+# Install TypeScript dependencies (one time setup)
+npm install
+
+# Type check the frontend code
+npm run typecheck
+
+# Watch for changes and continuously type check
+npm run watch
+
+# Build/validate TypeScript
+npm run build
+```
+
+The TypeScript source is located at `label_bro/static/js/app.ts` with comprehensive type definitions for all API responses and UI interactions. The original `app.js` continues to work, but developers should use the TypeScript version for modifications.
 
 ### system python
 
@@ -116,15 +168,22 @@ and then I would feed it specific files/functions to work on rather than the ent
 continually feed the entire codebase to ChatGPT as well with a bit of tooling.
 
 The important files are:
-- label_bro/static/app.js
+- label_bro/static/js/app.ts (TypeScript frontend with type definitions)
+- label_bro/static/js/app.js (compiled JavaScript - still functional)
 - label_bro/templates/index.html
 - label_bro/app.py
 - label_bro/utils/label_creation.py
 - label_bro/utils/printer_utils.py
 
-Less important but still used is:
+Development and configuration files:
+- justfile (modern Make-like task runner with dev workflow)
+- tsconfig.json (TypeScript configuration)
+- package.json (npm dependencies for TypeScript)
 - label_bro/static/css/style.css
 - requirements.txt
+
+Documentation:
+- TYPESCRIPT.md (TypeScript setup and usage guide)
 
 Besides `setup.py`, the other files are likely not even used in any way (ChatGPT generated the entire structure).
 

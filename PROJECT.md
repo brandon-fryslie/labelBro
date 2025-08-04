@@ -13,7 +13,8 @@ LabelBro is a Flask web application for generating and printing labels on Brothe
 - **Flask Web App** (`label_bro/app.py`): Main web server with endpoints for label preview and printing
 - **Label Creation** (`label_bro/utils/label_creation.py`): Cairo-based image generation for full-width and small labels
 - **Printer Utils** (`label_bro/utils/printer_utils.py`): Direct printer communication using brother_ql library
-- **Frontend** (`label_bro/static/js/app.js` + `label_bro/templates/index.html`): Live preview interface with debounced updates
+- **Frontend** (`label_bro/static/js/app.ts` + `label_bro/templates/index.html`): TypeScript-powered live preview interface with comprehensive type definitions and debounced updates
+- **Frontend (Legacy)** (`label_bro/static/js/app.js`): JavaScript version still functional for compatibility
 
 ### Key Technical Details
 - Uses Cairo (pycairo) for high-quality label image rendering
@@ -53,6 +54,24 @@ python3 -m pip uninstall pyusb; python3 -m pip install pyusb
 ```
 
 ### Running the Application
+
+#### Modern Development (Recommended)
+```bash
+# Install just command runner (one time)
+brew install just  # macOS
+# See https://github.com/casey/just#installation for other platforms
+
+# Start both TypeScript watcher and Flask server in parallel
+just dev
+
+# Other useful commands
+just setup     # Install all dependencies
+just status    # Check project status
+just test      # Run all tests
+just clean     # Clean build artifacts
+```
+
+#### Traditional Method
 ```bash
 # Start Flask development server
 python3 -m label_bro.app
@@ -68,6 +87,24 @@ pytest
 
 # Run tests with tox (multiple Python versions)
 tox
+
+# TypeScript type checking
+npm run typecheck
+```
+
+### TypeScript Development
+```bash
+# Install TypeScript dependencies
+npm install
+
+# Type check frontend code
+npm run typecheck
+
+# Watch for TypeScript changes with continuous type checking
+npm run watch
+
+# Build/validate TypeScript
+npm run build
 ```
 
 ## Hardware Requirements

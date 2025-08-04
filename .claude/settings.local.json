@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run typecheck:*)",
+      "Bash(npm install)",
+      "Bash(python3 -m pytest)",
+      "Bash(python3:*)",
+      "Bash(just:*)",
+      "Bash(timeout:*)",
+      "Bash(npm run build:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm test)",
+      "Bash(grep:*)",
+      "Bash(npm run test:*)",
+      "Bash(rm:*)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(chmod:*)",
+      "Bash(./test-exit-code.sh:*)"
+    ],
+    "deny": []
+  }
+}

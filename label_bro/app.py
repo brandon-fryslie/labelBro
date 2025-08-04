@@ -1,5 +1,7 @@
 import os
+import sys
 import traceback
+import socket
 from datetime import datetime
 from typing import List, Dict
 
@@ -219,7 +221,88 @@ def preview_labels_endpoint():
     }), 200
 
 
+@app.route('/log-frontend-error', methods=['POST'])
+def log_frontend_error():
+    """Endpoint for frontend to send TypeScript/validation errors to backend for centralized logging"""
+    try:
+        data = flask.request.get_json()
+        
+        if not data:
+            return flask.jsonify({'error': 'No data provided'}), 400
+        
+        error_type = data.get('type', 'FRONTEND_ERROR')
+        error_message = data.get('message', 'Unknown error')
+        error_details = data.get('details', {})
+        timestamp = data.get('timestamp', datetime.now().isoformat())
+        source = data.get('source', 'frontend')
+        
+        # Format error for stderr logging
+        formatted_error = f"""
+╭─────────────────────────────────────────────────────────────────╮
+│ 🚨 FRONTEND ERROR LOGGED TO BACKEND                            │
+├─────────────────────────────────────────────────────────────────┤
+│ Type:      {error_type:<50} │
+│ Source:    {source:<50} │
+│ Time:      {timestamp:<50} │
+│ Message:   {error_message[:50]:<50} │
+├─────────────────────────────────────────────────────────────────┤
+│ Details:                                                        │
+│ {str(error_details)[:65]:<65} │
+╰─────────────────────────────────────────────────────────────────╯
+        """
+        
+        # Log to stderr for visibility
+        print(formatted_error, file=sys.stderr, flush=True)
+        
+        # Also log via the regular print for console visibility
+        print(f"[FRONTEND_ERROR] {error_type}: {error_message}", flush=True)
+        
+        # Log details if they contain validation errors (for AI feedback)  
+        if 'validationErrors' in error_details:
+            validation_summary = f"[VALIDATION_FAILURE] {len(error_details['validationErrors'])} validation errors detected"
+            print(validation_summary, file=sys.stderr, flush=True)
+            
+            # Log first few validation errors for debugging
+            for i, error in enumerate(error_details['validationErrors'][:3]):
+                error_line = f"  [{i+1}] Path: {error.get('path', 'unknown')} | Expected: {error.get('expected', 'unknown')} | Got: {str(error.get('value', 'unknown'))[:30]}"
+                print(error_line, file=sys.stderr, flush=True)
+                
+            if len(error_details['validationErrors']) > 3:
+                print(f"  ... and {len(error_details['validationErrors']) - 3} more validation errors", file=sys.stderr, flush=True)
+        
+        return flask.jsonify({
+            'status': 'logged',
+            'message': 'Error logged to backend successfully'
+        }), 200
+        
+    except Exception as e:
+        error_msg = f"Failed to log frontend error: {str(e)}"
+        print(error_msg, file=traceback.sys.stderr, flush=True)
+        return flask.jsonify({'error': error_msg}), 500
+
+
 # AI generation routes removed - functionality not needed for multiple printer support
 
+def find_available_port(start_port=5099, max_attempts=100):
+    """Find an available port starting from start_port"""
+    for port in range(start_port, start_port + max_attempts):
+        try:
+            # Create a socket and try to bind to the port
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.bind(('0.0.0.0', port))
+                return port
+        except OSError:
+            # Port is in use, try the next one
+            continue
+    
+    # If no port is available in the range, fallback to port 0 (system assigned)
+    return 0
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5099, debug=True)
+    port = find_available_port()
+    if port == 0:
+        print("Warning: Using system-assigned port")
+        app.run(host='0.0.0.0', debug=True)
+    else:
+        print(f"Starting server on port {port}")
+        app.run(host='0.0.0.0', port=port, debug=True)
