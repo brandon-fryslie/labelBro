@@ -181,33 +181,90 @@ const errorReportingPlugin = {
   }
 };
 
-// Build configuration
-const buildConfig = {
-  entryPoints: ['src/main.tsx'],
-  outfile: 'label_bro/static/js/bundle.js',
-  target: 'es2020',
-  format: 'iife',
-  sourcemap: true,
-  bundle: true,
-  jsx: 'automatic',
-  jsxImportSource: 'react',
-  plugins: [errorReportingPlugin]
-};
-
 // Main build function
 async function build() {
   try {
-    if (process.argv.includes('--watch')) {
-      // Watch mode
-      buildConfig.minify = false; // Don't minify in watch mode for faster builds
+    const isWatch = process.argv.includes('--watch');
+    const isProduction = !isWatch && !process.argv.includes('--dev');
+    
+    // Set NODE_ENV for React production optimizations
+    if (isProduction) {
+      process.env.NODE_ENV = 'production';
+      console.log('🏭 Building for production (NODE_ENV=production)');
+    } else {
+      process.env.NODE_ENV = 'development';
+      console.log('🛠️ Building for development (NODE_ENV=development)');
+    }
+
+    // Build configuration with React optimization
+    const buildConfig = {
+      entryPoints: ['src/main.tsx'],
+      outfile: 'label_bro/static/js/bundle.js',
+      target: 'es2020',
+      format: 'iife',
+      sourcemap: true,
+      bundle: true,
+      jsx: 'automatic',
+      jsxImportSource: 'react',
+      plugins: [errorReportingPlugin],
+      
+      // Production optimizations
+      minify: isProduction,
+      treeShaking: true,
+      
+      // Define NODE_ENV for bundled code (critical for React optimization)
+      define: {
+        'process.env.NODE_ENV': isProduction ? '"production"' : '"development"'
+      },
+      
+      // Production-only optimizations
+      ...(isProduction && {
+        drop: ['console', 'debugger'], // Remove console.log and debugger statements
+        legalComments: 'none', // Remove legal comments to save bytes
+      }),
+      
+      // External dependencies optimization (none for now - bundle everything)
+      external: [],
+    };
+
+    if (isWatch) {
+      // Watch mode - faster builds, more debugging info
       const ctx = await esbuild.context(buildConfig);
       await ctx.watch();
       console.log('👀 Watching for TypeScript changes...');
     } else {
       // Single build
-      buildConfig.minify = true;
-      await esbuild.build(buildConfig);
-      console.log('✅ TypeScript build completed');
+      const result = await esbuild.build({
+        ...buildConfig,
+        metafile: true // Generate metafile for analysis
+      });
+      
+      if (isProduction) {
+        console.log('✅ Production TypeScript build completed');
+        
+        // Show bundle size information
+        const bundlePath = 'label_bro/static/js/bundle.js';
+        if (fs.existsSync(bundlePath)) {
+          const bundleSize = fs.statSync(bundlePath).size;
+          console.log(`📦 Bundle size: ${(bundleSize / 1024).toFixed(2)} KB`);
+          
+          if (bundleSize > 500 * 1024) {
+            console.warn('⚠️ Bundle size > 500KB - consider optimization');
+          } else if (bundleSize > 250 * 1024) {
+            console.log('⚡ Bundle size moderate - optimization opportunities exist');
+          } else {
+            console.log('✅ Bundle size is optimal');
+          }
+        }
+        
+        // Optional: Save metafile for further analysis
+        if (result.metafile) {
+          fs.writeFileSync('bundle-meta.json', JSON.stringify(result.metafile, null, 2));
+          console.log('📊 Bundle metafile saved to bundle-meta.json');
+        }
+      } else {
+        console.log('✅ Development TypeScript build completed');
+      }
     }
   } catch (error) {
     console.error('❌ Build failed:', error);

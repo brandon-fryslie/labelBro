@@ -1,5 +1,22 @@
-// Sentry error tracking integration
-import { init, captureException, captureMessage, setUser, setTag, setContext, withScope } from '@sentry/browser';
+// Optimized Sentry error tracking integration - minimal bundle size
+// Import only essential functions to exclude heavy features like Replay, Feedback, Canvas
+import { 
+  init, 
+  captureException, 
+  captureMessage, 
+  setUser, 
+  setTag, 
+  setContext, 
+  withScope,
+  getCurrentScope,
+  // Import only essential browser integrations to minimize bundle size
+  globalHandlersIntegration,
+  breadcrumbsIntegration,
+  linkedErrorsIntegration,
+  browserTracingIntegration,
+  dedupeIntegration,
+  inboundFiltersIntegration
+} from '@sentry/browser';
 
 interface ErrorTrackingConfig {
   dsn?: string;
@@ -23,7 +40,7 @@ class ErrorTrackingService {
     const defaultConfig: ErrorTrackingConfig = {
       environment: this.isDevelopment ? 'development' : 'production',
       sampleRate: this.isDevelopment ? 1.0 : 0.1, // 100% in dev, 10% in prod
-      tracesSampleRate: this.isDevelopment ? 1.0 : 0.1,
+      tracesSampleRate: this.isDevelopment ? 1.0 : 0.05, // Reduced for production
       ...config
     };
 
@@ -35,9 +52,49 @@ class ErrorTrackingService {
         sampleRate: defaultConfig.sampleRate,
         tracesSampleRate: defaultConfig.tracesSampleRate,
         
+        // Minimal integrations - exclude heavy features to reduce bundle size
         integrations: [
-          // Add custom integrations if needed
+          // Essential error handling
+          globalHandlersIntegration({
+            onunhandledrejection: true,
+            onerror: true,
+          }),
+          
+          // Basic breadcrumbs - minimal configuration
+          breadcrumbsIntegration({
+            console: false, // Disable console breadcrumbs to reduce noise and bundle size
+            dom: true,      // Keep DOM events for UI debugging
+            fetch: false,   // Disable fetch tracking to reduce bundle size
+            history: false, // Disable history tracking to reduce bundle size
+            sentry: false,  // Disable Sentry breadcrumbs to reduce noise
+            xhr: false,     // Disable XHR tracking to reduce bundle size
+          }),
+          
+          // Error deduplication
+          dedupeIntegration(),
+          
+          // Basic error filtering
+          inboundFiltersIntegration(),
+          
+          // Linked error handling
+          linkedErrorsIntegration({
+            key: 'cause',
+            limit: 3, // Limit chain depth to reduce processing
+          }),
+          
+          // Minimal tracing - disabled most features for bundle size
+          browserTracingIntegration({
+            routingInstrumentation: undefined, // No routing instrumentation
+            enableLongTask: false, // Disable long task tracking
+            enableInp: false, // Disable INP tracking
+            enableUserInteractionTracing: false, // Disable interaction tracking
+          }),
         ],
+        
+        // Exclude heavy features completely (these are auto-included by default)
+        // replayIntegration - EXCLUDED (294KB)
+        // feedbackIntegration - EXCLUDED (75KB)  
+        // replayCanvasIntegration - EXCLUDED (31KB)
 
         beforeSend: (event, hint) => {
           // Filter out noise in development
@@ -46,7 +103,7 @@ class ErrorTrackingService {
             console.log('💡 Error Hint:', hint);
           }
 
-          // Don't send certain errors in production
+          // Don't send certain errors in production to reduce noise
           if (event.exception) {
             const error = hint?.originalException;
             
@@ -54,7 +111,9 @@ class ErrorTrackingService {
             if (error instanceof Error) {
               if (error.message.includes('Network request failed') ||
                   error.message.includes('Failed to fetch') ||
-                  error.message.includes('Load failed')) {
+                  error.message.includes('Load failed') ||
+                  error.message.includes('ResizeObserver loop limit exceeded') ||
+                  error.message.includes('Non-Error promise rejection')) {
                 return null;
               }
             }
@@ -64,17 +123,16 @@ class ErrorTrackingService {
         },
 
         beforeBreadcrumb: (breadcrumb) => {
-          // Filter out noisy breadcrumbs
+          // Minimal breadcrumb filtering
           if (breadcrumb.category === 'console' && breadcrumb.level === 'debug') {
             return null;
           }
 
-          // Enhance UI breadcrumbs with more context
+          // Only keep essential UI breadcrumbs
           if (breadcrumb.category === 'ui.click') {
             breadcrumb.data = {
               ...breadcrumb.data,
               timestamp: Date.now(),
-              url: window.location.href
             };
           }
 
@@ -82,26 +140,23 @@ class ErrorTrackingService {
         }
       });
 
-      // Set initial context using withScope
+      // Set minimal context using withScope
       withScope((scope) => {
         scope.setTag('component', 'labelBro-frontend');
         scope.setContext('browser', {
           userAgent: navigator.userAgent,
           language: navigator.language,
-          platform: navigator.platform,
-          cookieEnabled: navigator.cookieEnabled
         });
         scope.setContext('application', {
           framework: 'React',
           version: process.env.REACT_APP_VERSION || 'unknown',
-          build: process.env.REACT_APP_BUILD_ID || 'development'
         });
       });
 
       this.isInitialized = true;
       
       if (this.isDevelopment) {
-        console.log('🔍 Sentry initialized for development');
+        console.log('🔍 Sentry initialized (minimal bundle configuration)');
       }
     } catch (error) {
       console.warn('Failed to initialize Sentry:', error);
@@ -249,6 +304,5 @@ export const errorTracking = new ErrorTrackingService();
 // Export types for TypeScript support
 export type { ErrorTrackingConfig };
 
-// Initialize with sensible defaults
-// Can be overridden by calling errorTracking.initialize(config) with specific settings
+// Initialize with sensible defaults - minimal configuration for bundle size
 errorTracking.initialize();

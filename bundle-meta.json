@@ -5828,7 +5828,7 @@
       "format": "esm"
     },
     "src/utils/error-tracking.ts": {
-      "bytes": 7659,
+      "bytes": 9779,
       "imports": [
         {
           "path": "node_modules/@sentry/browser/build/npm/esm/index.js",
@@ -5891,7 +5891,7 @@
       "format": "esm"
     },
     "src/validation/index.ts": {
-      "bytes": 9942,
+      "bytes": 18026,
       "imports": [
         {
           "path": "<runtime>",
@@ -5902,7 +5902,7 @@
       "format": "esm"
     },
     "src/api/index.ts": {
-      "bytes": 8652,
+      "bytes": 8979,
       "imports": [
         {
           "path": "../types",
@@ -6007,7 +6007,7 @@
       "format": "esm"
     },
     "src/components/LogsPanel.tsx": {
-      "bytes": 4130,
+      "bytes": 4484,
       "imports": [
         {
           "path": "node_modules/react/index.js",
@@ -6015,9 +6015,9 @@
           "original": "react"
         },
         {
-          "path": "src/context/AppContext.tsx",
+          "path": "../types",
           "kind": "import-statement",
-          "original": "../context/AppContext"
+          "external": true
         },
         {
           "path": "node_modules/react/jsx-runtime.js",
@@ -6173,6 +6173,32 @@
       ],
       "format": "esm"
     },
+    "src/components/LazyHistoryPanel.tsx": {
+      "bytes": 3864,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/utils/error-tracking.ts",
+          "kind": "import-statement",
+          "original": "../utils/error-tracking"
+        },
+        {
+          "path": "src/components/HistoryPanel.tsx",
+          "kind": "dynamic-import",
+          "original": "./HistoryPanel"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
     "src/components/HelpModal.tsx": {
       "bytes": 3830,
       "imports": [
@@ -6180,6 +6206,32 @@
           "path": "react",
           "kind": "import-statement",
           "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/LazyHelpModal.tsx": {
+      "bytes": 3797,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/utils/error-tracking.ts",
+          "kind": "import-statement",
+          "original": "../utils/error-tracking"
+        },
+        {
+          "path": "src/components/HelpModal.tsx",
+          "kind": "dynamic-import",
+          "original": "./HelpModal"
         },
         {
           "path": "node_modules/react/jsx-runtime.js",
@@ -6220,24 +6272,13 @@
       ],
       "format": "esm"
     },
-    "node_modules/web-vitals/dist/web-vitals.js": {
-      "bytes": 5867,
-      "imports": [
-        {
-          "path": "<runtime>",
-          "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "esm"
-    },
     "src/utils/performance-monitor.ts": {
-      "bytes": 7710,
+      "bytes": 12310,
       "imports": [
         {
-          "path": "node_modules/web-vitals/dist/web-vitals.js",
+          "path": "src/utils/error-tracking.ts",
           "kind": "import-statement",
-          "original": "web-vitals"
+          "original": "./error-tracking"
         },
         {
           "path": "<runtime>",
@@ -6248,7 +6289,7 @@
       "format": "esm"
     },
     "src/components/PerformanceDebugPanel.tsx": {
-      "bytes": 3861,
+      "bytes": 3919,
       "imports": [
         {
           "path": "node_modules/react/index.js",
@@ -6269,7 +6310,7 @@
       "format": "esm"
     },
     "src/components/App.tsx": {
-      "bytes": 2472,
+      "bytes": 2496,
       "imports": [
         {
           "path": "node_modules/react/index.js",
@@ -6317,14 +6358,14 @@
           "original": "./ErrorDisplay"
         },
         {
-          "path": "src/components/HistoryPanel.tsx",
+          "path": "src/components/LazyHistoryPanel.tsx",
           "kind": "import-statement",
-          "original": "./HistoryPanel"
+          "original": "./LazyHistoryPanel"
         },
         {
-          "path": "src/components/HelpModal.tsx",
+          "path": "src/components/LazyHelpModal.tsx",
           "kind": "import-statement",
-          "original": "./HelpModal"
+          "original": "./LazyHelpModal"
         },
         {
           "path": "src/components/ActionToolbar.tsx",
@@ -6415,7 +6456,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 1638496
+      "bytes": 2006368
     },
     "label_bro/static/js/bundle.js": {
       "imports": [],
@@ -6424,13 +6465,13 @@
       "cssBundle": "label_bro/static/js/bundle.css",
       "inputs": {
         "node_modules/scheduler/cjs/scheduler.production.js": {
-          "bytesInOutput": 3662
+          "bytesInOutput": 3536
         },
         "node_modules/scheduler/index.js": {
           "bytesInOutput": 51
         },
         "node_modules/react/cjs/react.production.js": {
-          "bytesInOutput": 7647
+          "bytesInOutput": 7631
         },
         "node_modules/react/index.js": {
           "bytesInOutput": 51
@@ -6439,13 +6480,13 @@
           "bytesInOutput": 3343
         },
         "node_modules/react-dom/index.js": {
-          "bytesInOutput": 253
+          "bytesInOutput": 234
         },
         "node_modules/react-dom/cjs/react-dom-client.production.js": {
-          "bytesInOutput": 169116
+          "bytesInOutput": 169165
         },
         "node_modules/react-dom/client.js": {
-          "bytesInOutput": 253
+          "bytesInOutput": 234
         },
         "node_modules/react/cjs/react-jsx-runtime.production.js": {
           "bytesInOutput": 364
@@ -6457,16 +6498,16 @@
           "bytesInOutput": 4389
         },
         "src/validation/index.ts": {
-          "bytesInOutput": 4775
+          "bytesInOutput": 8225
         },
         "src/api/index.ts": {
-          "bytesInOutput": 3595
+          "bytesInOutput": 3065
         },
         "src/hooks/usePrinters.ts": {
-          "bytesInOutput": 2422
+          "bytesInOutput": 2298
         },
         "src/hooks/useLocalStorage.ts": {
-          "bytesInOutput": 610
+          "bytesInOutput": 491
         },
         "src/components/PrinterPanel.tsx": {
           "bytesInOutput": 2839
@@ -6477,14 +6518,20 @@
         "src/components/LabelPreview.tsx": {
           "bytesInOutput": 1433
         },
+        "src/components/HistoryPanel.tsx": {
+          "bytesInOutput": 2385
+        },
+        "src/components/HelpModal.tsx": {
+          "bytesInOutput": 3716
+        },
         "src/main.tsx": {
-          "bytesInOutput": 874
+          "bytesInOutput": 782
         },
         "src/components/App.tsx": {
           "bytesInOutput": 839
         },
         "src/components/GlobalErrorBoundary.tsx": {
-          "bytesInOutput": 2837
+          "bytesInOutput": 2807
         },
         "node_modules/@sentry/core/build/esm/debug-build.js": {
           "bytesInOutput": 52
@@ -6529,7 +6576,7 @@
           "bytesInOutput": 1023
         },
         "node_modules/@sentry/core/build/esm/utils/time.js": {
-          "bytesInOutput": 206
+          "bytesInOutput": 564
         },
         "node_modules/@sentry/core/build/esm/session.js": {
           "bytesInOutput": 1530
@@ -6556,25 +6603,37 @@
           "bytesInOutput": 51
         },
         "node_modules/@sentry/core/build/esm/currentScopes.js": {
-          "bytesInOutput": 495
+          "bytesInOutput": 493
         },
         "node_modules/@sentry/core/build/esm/semanticAttributes.js": {
-          "bytesInOutput": 174
+          "bytesInOutput": 319
+        },
+        "node_modules/@sentry/core/build/esm/tracing/spanstatus.js": {
+          "bytesInOutput": 849
         },
         "node_modules/@sentry/core/build/esm/tracing/utils.js": {
-          "bytesInOutput": 105
+          "bytesInOutput": 151
         },
         "node_modules/@sentry/core/build/esm/utils/baggage.js": {
-          "bytesInOutput": 542
+          "bytesInOutput": 968
         },
         "node_modules/@sentry/core/build/esm/utils/dsn.js": {
-          "bytesInOutput": 1414
+          "bytesInOutput": 1373
         },
         "node_modules/@sentry/core/build/esm/utils/parseSampleRate.js": {
           "bytesInOutput": 150
         },
+        "node_modules/@sentry/core/build/esm/utils/tracing.js": {
+          "bytesInOutput": 776
+        },
         "node_modules/@sentry/core/build/esm/utils/spanUtils.js": {
-          "bytesInOutput": 1565
+          "bytesInOutput": 2083
+        },
+        "node_modules/@sentry/core/build/esm/tracing/errors.js": {
+          "bytesInOutput": 251
+        },
+        "node_modules/@sentry/core/build/esm/index.js": {
+          "bytesInOutput": 0
         },
         "node_modules/@sentry/core/build/esm/utils/hasSpansEnabled.js": {
           "bytesInOutput": 169
@@ -6583,19 +6642,43 @@
           "bytesInOutput": 20
         },
         "node_modules/@sentry/core/build/esm/tracing/dynamicSamplingContext.js": {
-          "bytesInOutput": 865
+          "bytesInOutput": 892
+        },
+        "node_modules/@sentry/core/build/esm/tracing/sentryNonRecordingSpan.js": {
+          "bytesInOutput": 407
         },
         "node_modules/@sentry/core/build/esm/utils/normalize.js": {
           "bytesInOutput": 1916
         },
         "node_modules/@sentry/core/build/esm/utils/envelope.js": {
-          "bytesInOutput": 1578
+          "bytesInOutput": 1617
         },
         "node_modules/@sentry/core/build/esm/utils/should-ignore-span.js": {
           "bytesInOutput": 424
         },
         "node_modules/@sentry/core/build/esm/envelope.js": {
-          "bytesInOutput": 681
+          "bytesInOutput": 1157
+        },
+        "node_modules/@sentry/core/build/esm/tracing/logSpans.js": {
+          "bytesInOutput": 688
+        },
+        "node_modules/@sentry/core/build/esm/tracing/measurement.js": {
+          "bytesInOutput": 337
+        },
+        "node_modules/@sentry/core/build/esm/tracing/sentrySpan.js": {
+          "bytesInOutput": 3703
+        },
+        "node_modules/@sentry/core/build/esm/utils/handleCallbackErrors.js": {
+          "bytesInOutput": 166
+        },
+        "node_modules/@sentry/core/build/esm/tracing/sampling.js": {
+          "bytesInOutput": 968
+        },
+        "node_modules/@sentry/core/build/esm/tracing/trace.js": {
+          "bytesInOutput": 2765
+        },
+        "node_modules/@sentry/core/build/esm/tracing/idleSpan.js": {
+          "bytesInOutput": 2465
         },
         "node_modules/@sentry/core/build/esm/utils/syncpromise.js": {
           "bytesInOutput": 926
@@ -6604,7 +6687,7 @@
           "bytesInOutput": 276
         },
         "node_modules/@sentry/core/build/esm/utils/applyScopeDataToEvent.js": {
-          "bytesInOutput": 1724
+          "bytesInOutput": 1723
         },
         "node_modules/@sentry/core/build/esm/utils/debug-ids.js": {
           "bytesInOutput": 318
@@ -6613,10 +6696,7 @@
           "bytesInOutput": 2465
         },
         "node_modules/@sentry/core/build/esm/exports.js": {
-          "bytesInOutput": 757
-        },
-        "node_modules/@sentry/core/build/esm/index.js": {
-          "bytesInOutput": 0
+          "bytesInOutput": 833
         },
         "node_modules/@sentry/core/build/esm/api.js": {
           "bytesInOutput": 423
@@ -6634,7 +6714,7 @@
           "bytesInOutput": 747
         },
         "node_modules/@sentry/core/build/esm/client.js": {
-          "bytesInOutput": 7842
+          "bytesInOutput": 7841
         },
         "node_modules/@sentry/core/build/esm/logs/envelope.js": {
           "bytesInOutput": 246
@@ -6643,7 +6723,7 @@
           "bytesInOutput": 271
         },
         "node_modules/@sentry/core/build/esm/sdk.js": {
-          "bytesInOutput": 249
+          "bytesInOutput": 155
         },
         "node_modules/@sentry/core/build/esm/utils/promisebuffer.js": {
           "bytesInOutput": 526
@@ -6655,13 +6735,16 @@
           "bytesInOutput": 731
         },
         "node_modules/@sentry/core/build/esm/utils/url.js": {
-          "bytesInOutput": 225
+          "bytesInOutput": 784
         },
         "node_modules/@sentry/core/build/esm/utils/ipAddress.js": {
           "bytesInOutput": 154
         },
         "node_modules/@sentry/core/build/esm/utils/sdkMetadata.js": {
           "bytesInOutput": 184
+        },
+        "node_modules/@sentry/core/build/esm/utils/traceData.js": {
+          "bytesInOutput": 417
         },
         "node_modules/@sentry/core/build/esm/breadcrumbs.js": {
           "bytesInOutput": 261
@@ -6684,6 +6767,9 @@
         "node_modules/@sentry/core/build/esm/integrations/dedupe.js": {
           "bytesInOutput": 948
         },
+        "node_modules/@sentry/core/build/esm/fetch.js": {
+          "bytesInOutput": 2061
+        },
         "node_modules/@sentry/core/build/esm/utils/breadcrumb-log-level.js": {
           "bytesInOutput": 82
         },
@@ -6691,7 +6777,7 @@
           "bytesInOutput": 709
         },
         "node_modules/@sentry/core/build/esm/instrument/fetch.js": {
-          "bytesInOutput": 1312
+          "bytesInOutput": 1855
         },
         "node_modules/@sentry/core/build/esm/utils/env.js": {
           "bytesInOutput": 26
@@ -6712,22 +6798,106 @@
           "bytesInOutput": 53
         },
         "node_modules/@sentry-internal/browser-utils/build/esm/types.js": {
-          "bytesInOutput": 9
+          "bytesInOutput": 8
         },
-        "node_modules/@sentry-internal/browser-utils/build/esm/instrument/dom.js": {
-          "bytesInOutput": 1631
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/bindReporter.js": {
+          "bytesInOutput": 204
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/generateUniqueID.js": {
+          "bytesInOutput": 78
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/getNavigationEntry.js": {
+          "bytesInOutput": 146
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/getActivationStart.js": {
+          "bytesInOutput": 36
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/initMetric.js": {
+          "bytesInOutput": 251
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/initUnique.js": {
+          "bytesInOutput": 80
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/LayoutShiftManager.js": {
+          "bytesInOutput": 524
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/observe.js": {
+          "bytesInOutput": 220
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/runOnce.js": {
+          "bytesInOutput": 47
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/getVisibilityWatcher.js": {
+          "bytesInOutput": 642
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/whenActivated.js": {
+          "bytesInOutput": 91
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/onFCP.js": {
+          "bytesInOutput": 285
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/getCLS.js": {
+          "bytesInOutput": 401
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/polyfills/interactionCountPolyfill.js": {
+          "bytesInOutput": 310
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/InteractionManager.js": {
+          "bytesInOutput": 1254
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/onHidden.js": {
+          "bytesInOutput": 181
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/whenIdleOrHidden.js": {
+          "bytesInOutput": 118
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/getINP.js": {
+          "bytesInOutput": 507
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/lib/LCPEntryManager.js": {
+          "bytesInOutput": 67
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/getLCP.js": {
+          "bytesInOutput": 488
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/web-vitals/onTTFB.js": {
+          "bytesInOutput": 304
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/instrument.js": {
+          "bytesInOutput": 1096
         },
         "node_modules/@sentry-internal/browser-utils/build/esm/index.js": {
           "bytesInOutput": 0
         },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/utils.js": {
+          "bytesInOutput": 1513
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/cls.js": {
+          "bytesInOutput": 653
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/lcp.js": {
+          "bytesInOutput": 855
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/browserMetrics.js": {
+          "bytesInOutput": 6533
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/elementTiming.js": {
+          "bytesInOutput": 921
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/instrument/dom.js": {
+          "bytesInOutput": 1626
+        },
         "node_modules/@sentry-internal/browser-utils/build/esm/instrument/history.js": {
-          "bytesInOutput": 529
+          "bytesInOutput": 524
         },
         "node_modules/@sentry-internal/browser-utils/build/esm/getNativeImplementation.js": {
-          "bytesInOutput": 441
+          "bytesInOutput": 437
         },
         "node_modules/@sentry-internal/browser-utils/build/esm/instrument/xhr.js": {
-          "bytesInOutput": 1183
+          "bytesInOutput": 1182
+        },
+        "node_modules/@sentry-internal/browser-utils/build/esm/metrics/inp.js": {
+          "bytesInOutput": 1357
         },
         "node_modules/@sentry/browser/build/npm/esm/transports/fetch.js": {
           "bytesInOutput": 510
@@ -6757,58 +6927,70 @@
           "bytesInOutput": 177
         },
         "node_modules/@sentry/browser/build/npm/esm/utils/detectBrowserExtension.js": {
-          "bytesInOutput": 470
+          "bytesInOutput": 308
         },
         "node_modules/@sentry/browser/build/npm/esm/sdk.js": {
           "bytesInOutput": 357
         },
+        "node_modules/@sentry/browser/build/npm/esm/tracing/resource-timing.js": {
+          "bytesInOutput": 780
+        },
+        "node_modules/@sentry/browser/build/npm/esm/tracing/request.js": {
+          "bytesInOutput": 2755
+        },
+        "node_modules/@sentry/browser/build/npm/esm/tracing/backgroundtab.js": {
+          "bytesInOutput": 471
+        },
+        "node_modules/@sentry/browser/build/npm/esm/tracing/linkedTraces.js": {
+          "bytesInOutput": 1465
+        },
+        "node_modules/@sentry/browser/build/npm/esm/tracing/browserTracingIntegration.js": {
+          "bytesInOutput": 5083
+        },
         "src/utils/error-tracking.ts": {
-          "bytesInOutput": 3335
+          "bytesInOutput": 2803
         },
         "src/components/StatusBar.tsx": {
           "bytesInOutput": 496
         },
         "src/components/LazyPrinterPanel.tsx": {
-          "bytesInOutput": 1792
+          "bytesInOutput": 1738
         },
         "src/components/LogsPanel.tsx": {
-          "bytesInOutput": 2486
+          "bytesInOutput": 2609
         },
         "src/components/LabelCreator.tsx": {
           "bytesInOutput": 1691
         },
         "src/components/LazyLabelPreview.tsx": {
-          "bytesInOutput": 1476
+          "bytesInOutput": 1422
         },
         "src/components/ErrorDisplay.tsx": {
           "bytesInOutput": 489
         },
-        "src/components/HistoryPanel.tsx": {
-          "bytesInOutput": 2318
+        "src/components/LazyHistoryPanel.tsx": {
+          "bytesInOutput": 2306
         },
-        "src/components/HelpModal.tsx": {
-          "bytesInOutput": 3652
+        "src/components/LazyHelpModal.tsx": {
+          "bytesInOutput": 2169
         },
         "src/components/ActionToolbar.tsx": {
           "bytesInOutput": 1576
         },
         "src/components/PerformanceDebugPanel.tsx": {
-          "bytesInOutput": 531
-        },
-        "node_modules/web-vitals/dist/web-vitals.js": {
-          "bytesInOutput": 5766
+          "bytesInOutput": 534
         },
         "src/utils/performance-monitor.ts": {
-          "bytesInOutput": 2767
+          "bytesInOutput": 5083
         },
         "src/utils/error-reporter.ts": {
-          "bytesInOutput": 1193
+          "bytesInOutput": 1068
         },
         "src/styles/globals.css": {
           "bytesInOutput": 0
         }
       },
-      "bytes": 316843
+      "bytes": 366714
     },
     "label_bro/static/js/bundle.css.map": {
       "imports": [],
