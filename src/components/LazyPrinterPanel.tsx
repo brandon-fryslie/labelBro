@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react';
+import { errorTracking } from '../utils/error-tracking';
 
 // Lazy load PrinterPanel for code splitting
 const PrinterPanel = React.lazy(() => 
@@ -41,6 +42,13 @@ class PrinterPanelErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error('PrinterPanel lazy loading error:', error, errorInfo);
+    
+    // Report to Sentry with specific context
+    errorTracking.captureComponentError(error, 'LazyPrinterPanel', {
+      lazyLoading: true,
+      componentStack: errorInfo.componentStack,
+      errorType: 'lazy_component_load_failure'
+    });
   }
 
   render(): React.ReactNode {
@@ -52,7 +60,13 @@ class PrinterPanelErrorBoundary extends React.Component<
             <div className="error-message">
               <p>Failed to load printer connection panel.</p>
               <button 
-                onClick={() => window.location.reload()} 
+                onClick={() => {
+                  errorTracking.captureMessage('User retried printer panel after error', 'info', {
+                    action: 'lazy_component_retry',
+                    component: 'PrinterPanel'
+                  });
+                  window.location.reload();
+                }} 
                 className="retry-button"
               >
                 Reload Page

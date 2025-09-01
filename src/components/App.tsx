@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AppProvider, useApp } from '../context/AppContext';
+import { GlobalErrorBoundary } from './GlobalErrorBoundary';
 import { StatusBar } from './StatusBar';
 import { LazyPrinterPanel } from './LazyPrinterPanel';
 import { LogsPanel } from './LogsPanel';
@@ -78,8 +79,10 @@ function AppContent(): React.ReactElement {
 
 export function App(): React.ReactElement {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <GlobalErrorBoundary>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </GlobalErrorBoundary>
   );
 }

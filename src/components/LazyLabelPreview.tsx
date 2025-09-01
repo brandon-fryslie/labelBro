@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react';
+import { errorTracking } from '../utils/error-tracking';
 
 // Lazy load LabelPreview for code splitting
 const LabelPreview = React.lazy(() => 
@@ -36,6 +37,13 @@ class LabelPreviewErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error('LabelPreview lazy loading error:', error, errorInfo);
+    
+    // Report to Sentry with specific context
+    errorTracking.captureComponentError(error, 'LazyLabelPreview', {
+      lazyLoading: true,
+      componentStack: errorInfo.componentStack,
+      errorType: 'lazy_component_load_failure'
+    });
   }
 
   render(): React.ReactNode {
@@ -46,7 +54,13 @@ class LabelPreviewErrorBoundary extends React.Component<
           <div className="error-message">
             <p>Failed to load label preview component.</p>
             <button 
-              onClick={() => this.setState({ hasError: false })} 
+              onClick={() => {
+                errorTracking.captureMessage('User retried label preview after error', 'info', {
+                  action: 'lazy_component_retry', 
+                  component: 'LabelPreview'
+                });
+                this.setState({ hasError: false });
+              }} 
               className="retry-button"
             >
               Try Again
