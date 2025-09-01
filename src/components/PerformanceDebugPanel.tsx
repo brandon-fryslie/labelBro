@@ -3,8 +3,8 @@ import { performanceMonitor, type PerformanceMetrics } from '../utils/performanc
 
 export function PerformanceDebugPanel(): React.ReactElement {
   const [isVisible, setIsVisible] = useState(false);
-  const [metrics, setMetrics] = useState<PerformanceMetrics>({});
-  const [storedMetrics, setStoredMetrics] = useState<Record<string, any>>({});
+  const [metrics, setMetrics] = useState<Partial<PerformanceMetrics>>({});
+  const [storedMetrics, setStoredMetrics] = useState<Record<string, { value: number; rating: string; timestamp: number }>>({});
 
   useEffect(() => {
     const updateMetrics = () => {

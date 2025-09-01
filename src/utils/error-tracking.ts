@@ -217,7 +217,7 @@ class ErrorTrackingService {
     });
   }
 
-  public capturePerformanceIssue(message: string, metrics: Record<string, number>): void {
+  public capturePerformanceIssue(message: string, metrics: Record<string, any>): void {
     this.captureMessage(message, 'warning', {
       performance: {
         ...metrics,
