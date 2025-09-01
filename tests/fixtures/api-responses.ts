@@ -1,5 +1,16 @@
-// Test fixtures for API responses - both valid and invalid
+// DEPRECATED: Legacy API response fixtures
+// 
+// This file is maintained for backward compatibility.
+// New tests should use the standardized fixtures from:
+// - ./printer-data.ts
+// - ./label-data.ts  
+// - ./discovery-data.ts
+// - ./index.ts (for centralized imports)
 
+import { basePrinterData } from './printer-data';
+import { validBase64Image } from './label-data';
+
+// Legacy printer data - use printer-data.ts for new tests
 export const validPrinterData = {
   id: "printer_001",
   display_name: "Brother QL-800",
@@ -23,6 +34,7 @@ export const invalidPrinterData = {
   // Missing required status field
 };
 
+// Legacy printers response - use discovery-data.ts for new tests
 export const validPrintersResponse = {
   printers: {
     "printer_001": validPrinterData,
@@ -38,9 +50,10 @@ export const invalidPrintersResponse = {
   printers: "not an object" // Should be Record<string, PrinterData>
 };
 
+// Legacy label preview data - use label-data.ts for new tests
 export const validLabelPreviewData = {
-  full_labels: ["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="],
-  small_labels: ["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="]
+  full_labels: [validBase64Image],
+  small_labels: [validBase64Image]
 };
 
 export const invalidLabelPreviewData = {
@@ -49,6 +62,7 @@ export const invalidLabelPreviewData = {
   error: true // Should be string if present
 };
 
+// Legacy discovery response - use discovery-data.ts for new tests
 export const validDiscoveryResponse = {
   success: true,
   data: {
@@ -73,6 +87,7 @@ export const invalidDiscoveryResponse = {
   }
 };
 
+// Legacy manual connection result - use discovery-data.ts for new tests
 export const validManualConnectionResult = {
   success: true,
   target: "192.168.1.100",
@@ -85,6 +100,7 @@ export const invalidManualConnectionResult = {
   printers_found: "none" // Should be array
 };
 
+// Legacy print request - use label-data.ts for new tests
 export const validPrintRequest = {
   data: {
     text: "Test Label",
@@ -103,7 +119,7 @@ export const invalidPrintRequest = {
   }
 };
 
-// Edge cases for comprehensive testing
+// Legacy edge cases - use specific fixture files for new tests
 export const edgeCaseResponses = {
   emptyPrintersResponse: {
     printers: {}
@@ -150,3 +166,27 @@ export const edgeCaseResponses = {
   
   numberInsteadOfObject: 42
 };
+
+// Deprecation warnings for development
+if (process.env.NODE_ENV === 'development') {
+  const deprecationMessage = `
+    ⚠️  DEPRECATION WARNING: api-responses.ts is deprecated
+    
+    Please migrate to the new standardized fixtures:
+    - Use printer-data.ts for printer-related fixtures
+    - Use label-data.ts for label and preview fixtures
+    - Use discovery-data.ts for discovery and connection fixtures
+    - Use index.ts for centralized imports
+    
+    Example migration:
+    OLD: import { validPrinterData } from './fixtures/api-responses';
+    NEW: import { basePrinterData } from './fixtures/printer-data';
+    OR:  import { basePrinterData } from './fixtures';
+  `;
+  
+  // Only log once per test run
+  if (!global.__deprecationWarningShown) {
+    console.warn(deprecationMessage);
+    global.__deprecationWarningShown = true;
+  }
+}
