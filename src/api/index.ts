@@ -78,8 +78,8 @@ export class LabelBroAPI {
           console.warn('⚠️ Typia validation disabled - returning unvalidated data');
           return rawData.printers || rawData || {};
         }
-        ValidationReporter.reportError(error as ValidationError);
-        throw error;
+        // For fetchPrinters, return null on validation errors
+        return null;
       }
     } catch (error) {
       console.error('Error fetching printers:', error);
@@ -87,7 +87,7 @@ export class LabelBroAPI {
     }
   }
 
-  // Discover printers on network with runtime validation
+  // Discover printers on network with runtime validation and graceful degradation
   static async discoverPrinters(): Promise<DiscoveryResponse | null> {
     try {
       const response = await fetch(DISCOVERY_ENDPOINT, {
@@ -113,13 +113,17 @@ export class LabelBroAPI {
         }
       }
 
-      // Runtime validation with Typia
+      // Runtime validation with Typia - use graceful degradation
       try {
         return TypeValidator.validateDiscoveryResponse(rawData);
       } catch (error) {
         if (error instanceof ValidationError) {
           ValidationReporter.logValidationError(error);
           ValidationReporter.reportError(error);
+          
+          // For discovery, use graceful degradation - return the data even if validation fails
+          console.warn('⚠️ DiscoveryResponse validation failed - returning unvalidated data');
+          return rawData as DiscoveryResponse;
         } else if (error instanceof Error && error.message.includes('no transform has been configured')) {
           // Typia configuration error - send to backend for visibility
           const configError = new ValidationError(
@@ -186,7 +190,7 @@ export class LabelBroAPI {
     return await response.json();
   }
 
-  // Test manual connection with runtime validation
+  // Test manual connection with runtime validation and graceful degradation
   static async testManualConnection(target: string): Promise<ManualConnectionResult> {
     const response = await fetch(TEST_ENDPOINT, {
       method: 'POST',

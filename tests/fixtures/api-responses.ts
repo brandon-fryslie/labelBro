@@ -6,6 +6,7 @@ export const validPrinterData = {
   is_connected: true,
   media_info: "62mm continuous tape",
   model: "QL-800",
+  status: "ready",
   ip: "192.168.1.100",
   media_loaded: true,
   printer_ready: true,
@@ -19,7 +20,7 @@ export const invalidPrinterData = {
   is_connected: "yes", // Should be boolean
   media_info: 123, // Should be string
   model: "QL-800",
-  // Missing required fields
+  // Missing required status field
 };
 
 export const validPrintersResponse = {
@@ -49,20 +50,26 @@ export const invalidLabelPreviewData = {
 };
 
 export const validDiscoveryResponse = {
-  printers: validPrintersResponse.printers,
-  discovery_methods: {
-    mdns: true,
-    network_scan: false,
-    usb: true
+  success: true,
+  data: {
+    printers: validPrintersResponse.printers,
+    discovery_methods: {
+      mdns: true,
+      network_scan: false,
+      usb: true
+    }
   }
 };
 
 export const invalidDiscoveryResponse = {
-  printers: validPrintersResponse.printers,
-  discovery_methods: {
-    mdns: "yes", // Should be boolean
-    network_scan: 1, // Should be boolean
-    invalid_method: true // Unknown property
+  success: true,
+  data: {
+    printers: validPrintersResponse.printers,
+    discovery_methods: {
+      mdns: "yes", // Should be boolean
+      network_scan: 1, // Should be boolean
+      invalid_method: true // Unknown property
+    }
   }
 };
 
@@ -105,7 +112,9 @@ export const edgeCaseResponses = {
   minimalPrinterData: {
     id: "minimal",
     display_name: "Minimal Printer",
-    is_connected: false
+    is_connected: false,
+    model: "Basic",
+    status: "offline"
   },
   
   maximalPrinterData: {
@@ -114,6 +123,10 @@ export const edgeCaseResponses = {
     is_connected: true,
     media_info: "62mm continuous tape with advanced features",
     model: "QL-800 Pro",
+    status: "ready",
+    model_number: "QL-800-PRO-V2",
+    backend: "brother_ql",
+    identifier: "Brother_QL-800_Pro_12345",
     ip: "192.168.1.255",
     media_loaded: true,
     printer_ready: true,
