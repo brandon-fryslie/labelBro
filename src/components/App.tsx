@@ -3,14 +3,14 @@ import { AppProvider, useApp } from '../context/AppContext';
 import { GlobalErrorBoundary } from './GlobalErrorBoundary';
 import { StatusBar } from './StatusBar';
 import { LazyPrinterPanel } from './LazyPrinterPanel';
-import { LogsPanel } from './LogsPanel';
+import { LazyLogsPanel } from './LazyLogsPanel';
 import { LabelCreator } from './LabelCreator';
 import { LazyLabelPreview } from './LazyLabelPreview';
 import { ErrorDisplay } from './ErrorDisplay';
 import { LazyHistoryPanel } from './LazyHistoryPanel';
 import { LazyHelpModal } from './LazyHelpModal';
 import { ActionToolbar } from './ActionToolbar';
-import { PerformanceDebugPanel } from './PerformanceDebugPanel';
+import { LazyPerformanceDebugPanel } from './LazyPerformanceDebugPanel';
 
 function AppContent(): React.ReactElement {
   const { state, setHelpModal } = useApp();
@@ -68,11 +68,11 @@ function AppContent(): React.ReactElement {
         onClose={handleHelpClose} 
       />
       
-      {/* Collapsible Bottom Log Panel - Fixed at bottom */}
-      <LogsPanel />
+      {/* Collapsible Bottom Log Panel - Lazy loaded */}
+      <LazyLogsPanel logs={[]} />
       
-      {/* Performance Debug Panel - Development only */}
-      <PerformanceDebugPanel />
+      {/* Performance Debug Panel - Development only, lazy loaded */}
+      <LazyPerformanceDebugPanel />
     </div>
   );
 }
