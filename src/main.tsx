@@ -3,7 +3,6 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './components/App';
 import { TypeScriptErrorReporter } from './utils/error-reporter';
-import { performanceMonitor } from './utils/performance-monitor';
 import { errorTracking } from './utils/error-tracking';
 import './styles/globals.css';
 
@@ -17,50 +16,74 @@ errorTracking.initialize({
 // Set up cross-system error reporting
 TypeScriptErrorReporter.setupGlobalErrorHandlers();
 
-// Initialize performance monitoring
-performanceMonitor.markStart('app-initialization');
-
-// Find the React mount point
-const container = document.getElementById('react-root');
-if (!container) {
-  const error = new Error('React root element not found');
-  errorTracking.captureError(error, {
-    initialization: {
-      step: 'dom-mount-point-lookup',
-      containerExists: false
+// Development-only performance monitoring with complete tree shaking
+if (process.env.NODE_ENV === 'development') {
+  // Only import performance monitoring in development
+  import('./utils/performance-monitor').then(({ performanceMonitor }) => {
+    performanceMonitor.markStart('app-initialization');
+    
+    // Mark app render start before React rendering
+    const originalRender = () => {
+      performanceMonitor.markStart('app-render');
+      const root = createRoot(container!);
+      root.render(<App />);
+      performanceMonitor.markEnd('app-render');
+      performanceMonitor.markEnd('app-initialization');
+    };
+    
+    // Find container and render with performance monitoring
+    const container = document.getElementById('react-root');
+    if (container) {
+      originalRender();
     }
+  }).catch(error => {
+    console.error('Failed to load performance monitoring:', error);
+    // Fallback to normal rendering if performance monitoring fails
+    renderApp();
   });
-  throw error;
+} else {
+  // Production: render immediately without performance monitoring
+  renderApp();
 }
 
-try {
-  // Create React root and render the application
-  const root = createRoot(container);
-  performanceMonitor.markStart('app-render');
-  root.render(<App />);
-  performanceMonitor.markEnd('app-render');
-
-  performanceMonitor.markEnd('app-initialization');
-  
-  // Log successful initialization
-  errorTracking.captureMessage('React application initialized successfully', 'info', {
-    initialization: {
-      performance_monitoring: true,
-      error_tracking: errorTracking.isAvailable(),
-      container_found: true
-    }
-  });
-  
-  console.log('React application initialized with performance monitoring and error tracking');
-} catch (error) {
-  // Capture any initialization errors
-  if (error instanceof Error) {
+function renderApp() {
+  // Find the React mount point
+  const container = document.getElementById('react-root');
+  if (!container) {
+    const error = new Error('React root element not found');
     errorTracking.captureError(error, {
       initialization: {
-        step: 'react-render',
-        fatal: true
+        step: 'dom-mount-point-lookup',
+        containerExists: false
       }
     });
+    throw error;
   }
-  throw error;
+
+  try {
+    // Create React root and render the application
+    const root = createRoot(container);
+    root.render(<App />);
+    
+    // Log successful initialization
+    errorTracking.captureMessage('React application initialized successfully', 'info', {
+      initialization: {
+        performance_monitoring: process.env.NODE_ENV === 'development',
+        error_tracking: errorTracking.isAvailable(),
+        container_found: true
+      }
+    });
+    
+  } catch (error) {
+    // Capture any initialization errors
+    if (error instanceof Error) {
+      errorTracking.captureError(error, {
+        initialization: {
+          step: 'react-render',
+          fatal: true
+        }
+      });
+    }
+    throw error;
+  }
 }

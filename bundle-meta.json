@@ -6320,7 +6320,7 @@
       "format": "esm"
     },
     "src/components/PerformanceDebugPanel.tsx": {
-      "bytes": 3919,
+      "bytes": 7354,
       "imports": [
         {
           "path": "node_modules/react/index.js",
@@ -6329,7 +6329,7 @@
         },
         {
           "path": "src/utils/performance-monitor.ts",
-          "kind": "import-statement",
+          "kind": "dynamic-import",
           "original": "../utils/performance-monitor"
         },
         {
@@ -6462,7 +6462,7 @@
       ]
     },
     "src/main.tsx": {
-      "bytes": 2052,
+      "bytes": 2872,
       "imports": [
         {
           "path": "react",
@@ -6483,11 +6483,6 @@
           "path": "src/utils/error-reporter.ts",
           "kind": "import-statement",
           "original": "./utils/error-reporter"
-        },
-        {
-          "path": "src/utils/performance-monitor.ts",
-          "kind": "import-statement",
-          "original": "./utils/performance-monitor"
         },
         {
           "path": "src/utils/error-tracking.ts",
@@ -6513,7 +6508,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 2035444
+      "bytes": 2041963
     },
     "label_bro/static/js/bundle.js": {
       "imports": [],
@@ -7002,13 +6997,13 @@
           "bytesInOutput": 3715
         },
         "src/utils/performance-monitor.ts": {
-          "bytesInOutput": 5116
+          "bytesInOutput": 5161
         },
         "src/components/PerformanceDebugPanel.tsx": {
-          "bytesInOutput": 614
+          "bytesInOutput": 3638
         },
         "src/main.tsx": {
-          "bytesInOutput": 787
+          "bytesInOutput": 671
         },
         "src/components/App.tsx": {
           "bytesInOutput": 846
@@ -7053,7 +7048,7 @@
           "bytesInOutput": 0
         }
       },
-      "bytes": 373977
+      "bytes": 376930
     },
     "label_bro/static/js/bundle.css.map": {
       "imports": [],
