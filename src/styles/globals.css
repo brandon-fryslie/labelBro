@@ -1,0 +1,818 @@
+/* ========================================================================
+   LABELBRO - GLOBAL STYLES
+   ======================================================================== */
+
+/* ========================================================================
+   1. IMPORTS & BASE SETUP
+   ======================================================================== */
+
+/* Global font setup */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================================================
+   2. CUSTOM UTILITIES & BASE STYLES
+   ======================================================================== */
+
+/* Custom scrollbar for webkit browsers */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(203 213 225);
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(148 163 184);
+  }
+}
+
+/* Mobile touch improvements and base styles */
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: manipulation;
+  }
+  
+  /* Improve button touch targets on mobile */
+  button, 
+  [role="button"],
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better focus states for accessibility */
+  :focus-visible {
+    outline: 2px solid theme('colors.primary.500');
+    outline-offset: 2px;
+  }
+}
+
+/* ========================================================================
+   3. ANIMATIONS & KEYFRAMES
+   ======================================================================== */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    transform: translateY(10px); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ========================================================================
+   4. COMPONENT STYLES - FORM ELEMENTS & BUTTONS
+   ======================================================================== */
+
+@layer components {
+  /* Form Controls */
+  .form-input {
+    @apply px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors;
+  }
+  
+  .form-input:disabled {
+    @apply bg-gray-50 text-gray-500 cursor-not-allowed;
+  }
+  
+  /* Button System */
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl;
+  }
+  
+  .btn-secondary {
+    @apply bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-lg transition-all duration-200;
+  }
+  
+  /* Card System */
+  .card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+  }
+  
+  .card-body {
+    @apply p-6;
+  }
+
+  /* Legacy container support */
+  .container {
+    @apply flex flex-col gap-5 max-w-6xl mx-auto px-4;
+  }
+
+  /* Printer Selection Components */
+  .printer-selection-container {
+    @apply flex flex-col gap-4 p-4 border border-gray-300 rounded-lg bg-gray-50 mb-5;
+  }
+
+  .printer-selector {
+    @apply flex flex-col gap-2.5;
+  }
+
+  .printer-selector-header {
+    @apply flex justify-between items-center mb-1;
+  }
+
+  .printer-selector label {
+    @apply font-bold text-base;
+  }
+
+  .refresh-button {
+    @apply px-2.5 py-1 text-sm border border-gray-300 rounded bg-gray-100 cursor-pointer transition-colors hover:bg-gray-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .printer-selector select {
+    @apply p-2 text-base border border-gray-300 rounded bg-white cursor-pointer;
+  }
+
+  .printer-status {
+    @apply text-sm py-1;
+  }
+
+  .printer-status .connected {
+    @apply text-green-600 font-bold;
+  }
+
+  .printer-status .disconnected {
+    @apply text-red-600 font-bold;
+  }
+
+  .printer-status .error {
+    @apply text-red-600 italic;
+  }
+
+  .printer-status .media-info {
+    @apply text-gray-600;
+  }
+
+  /* Status indicators */
+  .discovery-status {
+    @apply text-xs text-gray-500 italic mt-1;
+  }
+
+  .discovery-status.discovering {
+    @apply text-blue-600;
+  }
+
+  .discovery-status.success {
+    @apply text-green-600;
+  }
+
+  .discovery-status.error {
+    @apply text-red-600;
+  }
+
+  /* Utility classes */
+  .full-width-button {
+    @apply w-full;
+  }
+
+  /* Action Toolbar Components */
+  .action-toolbar {
+    @apply flex items-center justify-between px-5 py-3 bg-white border-b border-gray-200 shadow-lg gap-4 sticky top-0 z-50 min-h-[56px];
+  }
+
+  .primary-actions,
+  .secondary-actions {
+    @apply flex items-center gap-3;
+  }
+
+  .action-btn {
+    @apply flex items-center gap-2 px-4 py-2.5 border-none rounded-lg text-sm font-medium cursor-pointer transition-all duration-200 min-h-[44px] relative overflow-hidden;
+  }
+
+  .action-btn:focus {
+    @apply outline outline-2 outline-primary-500 outline-offset-2;
+  }
+
+  .btn-icon {
+    @apply text-base flex-shrink-0;
+  }
+
+  .btn-text {
+    @apply whitespace-nowrap;
+  }
+
+  .print-btn.enabled {
+    @apply bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30;
+  }
+
+  .print-btn.enabled:hover {
+    @apply bg-gradient-to-br from-green-600 to-green-700 shadow-xl shadow-green-500/40 -translate-y-0.5;
+  }
+
+  .print-btn.disabled {
+    @apply bg-gray-100 text-gray-400 cursor-not-allowed shadow-none;
+  }
+
+  .refresh-btn,
+  .history-btn,
+  .help-btn {
+    @apply bg-slate-50 text-slate-600 border border-slate-200;
+  }
+
+  .refresh-btn:hover:not(:disabled),
+  .history-btn:hover,
+  .help-btn:hover {
+    @apply bg-slate-100 border-slate-300 -translate-y-0.5;
+  }
+
+  .refresh-btn.loading {
+    @apply bg-yellow-50 text-yellow-800 border-yellow-300;
+  }
+
+  .history-btn.active {
+    @apply bg-blue-50 text-blue-800 border-blue-200;
+  }
+
+  /* Status Bar & Printer Panel */
+  .printer-status-bar {
+    @apply w-full bg-gradient-to-br from-slate-50 to-slate-100 border-b border-slate-200 transition-all duration-300 sticky top-14 z-40 bg-white shadow-lg rounded-b-xl overflow-hidden;
+  }
+
+  .status-bar-content {
+    @apply flex items-center justify-between px-4 py-3 cursor-pointer transition-all duration-200;
+  }
+
+  .status-bar-content:hover {
+    @apply bg-primary-500/5;
+  }
+
+  .status-icon {
+    @apply text-base mr-2;
+  }
+
+  .status-text {
+    @apply flex-1 text-sm font-medium text-gray-700;
+  }
+
+  .expand-indicator {
+    @apply text-xs text-gray-600 transition-transform duration-200;
+  }
+
+  .printer-status-bar.collapsed .expand-indicator {
+    @apply rotate-180;
+  }
+
+  .printer-panel {
+    @apply bg-white border-b border-gray-100 overflow-hidden transition-all duration-300;
+  }
+
+  .printer-panel.hidden {
+    @apply max-h-0 opacity-0;
+  }
+
+  /* Manual Connection Styles */
+  .printer-connection-mode h3 {
+    @apply m-0 mb-3 text-base font-semibold text-gray-900;
+  }
+
+  .connection-mode-selector {
+    @apply flex gap-4 mb-4;
+  }
+
+  .radio-label {
+    @apply flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer px-3 py-2 rounded-lg border border-gray-200 bg-white transition-all duration-200;
+  }
+
+  .radio-label:hover {
+    @apply bg-slate-50 border-slate-300;
+  }
+
+  .radio-label input[type="radio"] {
+    @apply w-4 h-4 m-0 cursor-pointer accent-primary-500;
+  }
+
+  .radio-label input[type="radio"]:checked + span {
+    @apply text-blue-800 font-semibold;
+  }
+
+  .connection-section {
+    @apply bg-slate-50 border border-gray-100 rounded-xl p-4 mt-3;
+  }
+
+  .manual-connection-header h4 {
+    @apply m-0 mb-1 text-sm font-semibold text-gray-900;
+  }
+
+  .manual-connection-header small {
+    @apply text-gray-600 text-xs;
+  }
+
+  .manual-connection-input {
+    @apply flex gap-3 my-3;
+  }
+
+  .manual-connection-input input {
+    @apply flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm transition-all duration-200;
+  }
+
+  .manual-connection-input input:focus {
+    @apply outline-none border-primary-500 shadow-lg shadow-primary-500/10;
+  }
+
+  .manual-connection-input button {
+    @apply px-4 py-2.5 bg-gradient-to-br from-primary-500 to-blue-800 text-white border-none rounded-lg text-sm font-medium cursor-pointer transition-all duration-200 min-w-[100px];
+  }
+
+  .manual-connection-input button:hover:not(:disabled) {
+    @apply bg-gradient-to-br from-blue-800 to-blue-900 -translate-y-0.5 shadow-lg shadow-primary-500/30;
+  }
+
+  .manual-connection-input button:disabled {
+    @apply bg-gray-400 cursor-not-allowed transform-none shadow-none;
+  }
+
+  .manual-connection-status {
+    @apply mt-2 px-3 py-2 rounded-lg text-sm font-medium;
+  }
+
+  .manual-connection-status.testing {
+    @apply bg-yellow-50 border border-yellow-300 text-yellow-800;
+  }
+
+  .manual-connection-status.success {
+    @apply bg-green-50 border border-green-300 text-green-800;
+  }
+
+  .manual-connection-status.error {
+    @apply bg-red-50 border border-red-300 text-red-800;
+  }
+
+  .manual-connection-results {
+    @apply mt-2.5;
+  }
+
+  /* Layout Components */
+  .app.mobile-optimized {
+    @apply flex flex-col min-h-screen relative bg-gradient-to-br from-slate-50 to-slate-100;
+  }
+
+  .center-content {
+    @apply flex-1 flex flex-col px-5 py-5 gap-5 overflow-y-auto max-w-6xl mx-auto w-full;
+  }
+
+  .label-input-section,
+  .label-preview-section {
+    @apply w-full bg-white rounded-2xl p-5 shadow-sm border border-gray-200;
+  }
+
+  .label-preview-section {
+    @apply min-h-[200px];
+  }
+
+  .top-bar-section {
+    @apply sticky top-14 z-40 bg-white shadow-lg rounded-b-xl overflow-hidden;
+  }
+
+  .bottom-bar-section {
+    @apply fixed bottom-0 left-0 right-0 z-40 bg-white shadow-lg rounded-t-xl overflow-hidden;
+  }
+
+  .fixed-bottom-div {
+    @apply fixed bottom-0 left-0 right-0 h-7 bg-slate-50 border-t border-slate-200 z-50;
+  }
+
+  /* Label Creator Components */
+  .label-creator-container {
+    @apply w-full;
+  }
+
+  .print-options-inline {
+    @apply flex flex-wrap gap-3 mb-4 p-4 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-xl shadow-sm;
+  }
+
+  .checkboxLabel {
+    @apply flex items-center gap-2.5 text-sm font-medium text-gray-700 cursor-pointer select-none px-3 py-2 rounded-lg transition-all duration-200 bg-white border border-gray-200 shadow-sm;
+  }
+
+  .checkboxLabel:hover {
+    @apply bg-slate-50 border-slate-300 -translate-y-0.5 shadow-md shadow-black/10;
+  }
+
+  .checkboxLabel input[type="checkbox"] {
+    @apply w-4 h-4 m-0 cursor-pointer accent-primary-500 rounded;
+  }
+
+  .checkboxLabel input[type="checkbox"]:checked + span {
+    @apply text-blue-800 font-semibold;
+  }
+
+  .label-text-input {
+    @apply w-full min-h-[140px] p-4 border-2 border-slate-200 rounded-xl text-base font-inter leading-relaxed resize-y transition-all duration-200 bg-white shadow-sm;
+  }
+
+  .label-text-input:focus {
+    @apply outline-none border-primary-500 shadow-lg shadow-primary-500/10 -translate-y-0.5;
+  }
+
+  .label-text-input:disabled {
+    @apply bg-slate-50 text-slate-600 cursor-not-allowed opacity-70;
+  }
+
+  .generating-indicator {
+    @apply mt-3 px-3 py-2 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg text-blue-800 text-xs font-medium flex items-center gap-2;
+  }
+
+  .generating-indicator::before {
+    @apply content-['⏳'] animate-pulse;
+  }
+
+  /* History Panel Components */
+  .history-panel {
+    @apply fixed top-0 right-0 w-80 h-screen bg-white border-l border-gray-200 shadow-2xl z-50 flex flex-col transform translate-x-full transition-transform duration-300 ease-out;
+  }
+
+  .history-panel.visible {
+    @apply transform-none;
+  }
+
+  .history-panel.hidden {
+    @apply translate-x-full;
+  }
+
+  .history-header {
+    @apply flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-slate-50;
+  }
+
+  .history-header h3 {
+    @apply m-0 text-base font-semibold text-gray-900;
+  }
+
+  .history-actions {
+    @apply flex gap-2;
+  }
+
+  .clear-history-button,
+  .close-history-button {
+    @apply w-7 h-7 border-none bg-transparent text-gray-600 cursor-pointer rounded border rounded-lg border-none flex items-center justify-center text-sm transition-all duration-200;
+  }
+
+  .clear-history-button:hover,
+  .close-history-button:hover {
+    @apply bg-gray-100 text-gray-700;
+  }
+
+  .history-content {
+    @apply flex-1 overflow-y-auto py-2;
+  }
+
+  .history-empty {
+    @apply px-5 py-10 text-center text-gray-600;
+  }
+
+  .history-empty p {
+    @apply m-0 mb-2 font-medium;
+  }
+
+  .history-empty small {
+    @apply text-xs text-gray-400;
+  }
+
+  .history-list {
+    @apply p-0;
+  }
+
+  .history-item {
+    @apply px-5 py-3 border-b border-gray-50 cursor-pointer transition-colors duration-200;
+  }
+
+  .history-item:hover {
+    @apply bg-gray-50;
+  }
+
+  .history-item:last-child {
+    @apply border-b-0;
+  }
+
+  .history-item-text {
+    @apply text-sm text-gray-900 leading-snug mb-1.5 line-clamp-2 overflow-hidden;
+  }
+
+  .history-item-meta {
+    @apply flex items-center justify-between gap-2;
+  }
+
+  .history-item-time {
+    @apply text-xs text-gray-400;
+  }
+
+  .history-item-options {
+    @apply flex gap-1;
+  }
+
+  .option-badge {
+    @apply bg-gray-200 text-gray-700 text-[10px] px-1.5 py-0.5 rounded-full font-medium;
+  }
+
+  .history-backdrop {
+    @apply fixed top-0 left-0 w-screen h-screen bg-black/30 z-40 hidden;
+  }
+
+  /* Help Modal Components */
+  .help-modal-backdrop {
+    @apply fixed top-0 left-0 w-screen h-screen bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in;
+  }
+
+  .help-modal {
+    @apply bg-white rounded-2xl max-w-2xl max-h-[90vh] w-full overflow-hidden shadow-2xl animate-slide-up flex flex-col;
+  }
+
+  .help-modal-header {
+    @apply flex items-center justify-between px-6 py-6 pb-4 border-b border-slate-100 bg-gradient-to-br from-indigo-600 to-purple-600 text-white;
+  }
+
+  .help-modal-header h2 {
+    @apply m-0 text-xl font-semibold;
+  }
+
+  .help-modal-close {
+    @apply bg-white/20 border-none text-white w-8 h-8 rounded-full cursor-pointer flex items-center justify-center text-base transition-colors duration-200;
+  }
+
+  .help-modal-close:hover {
+    @apply bg-white/30;
+  }
+
+  .help-modal-content {
+    @apply flex-1 overflow-y-auto p-6;
+  }
+
+  .help-section {
+    @apply mb-6;
+  }
+
+  .help-section:last-child {
+    @apply mb-0;
+  }
+
+  .help-section h3 {
+    @apply m-0 mb-3 text-base font-semibold text-slate-900 flex items-center gap-2;
+  }
+
+  .help-section p {
+    @apply m-0 mb-2 text-slate-600 leading-relaxed;
+  }
+
+  .help-section ul {
+    @apply m-0 pl-5 text-slate-600;
+  }
+
+  .help-section li {
+    @apply mb-1 leading-snug;
+  }
+
+  .help-section strong {
+    @apply text-slate-900 font-medium;
+  }
+
+  .help-modal-footer {
+    @apply px-6 py-4 pt-6 border-t border-slate-100 text-center;
+  }
+
+  .help-modal-button {
+    @apply bg-gradient-to-br from-indigo-600 to-purple-600 text-white border-none px-8 py-3 rounded-lg text-sm font-medium cursor-pointer transition-all duration-200;
+  }
+
+  .help-modal-button:hover {
+    @apply -translate-y-0.5 shadow-xl shadow-indigo-600/40;
+  }
+
+  /* Error Display Components */
+  .error-banner {
+    @apply bg-gradient-to-br from-red-50 to-red-100 border border-red-300 rounded-xl px-4 py-3 mx-5 my-3 flex items-center justify-between shadow-sm shadow-red-500/10 animate-slide-down;
+  }
+
+  .error-content {
+    @apply flex items-center gap-2.5 flex-1;
+  }
+
+  .error-icon {
+    @apply text-base;
+  }
+
+  .error-message {
+    @apply text-red-800 font-medium text-sm leading-snug;
+  }
+
+  .error-dismiss {
+    @apply bg-red-800/10 border border-red-800/20 rounded-full w-6 h-6 text-red-800 text-xs font-bold cursor-pointer transition-all duration-200 flex items-center justify-center flex-shrink-0;
+  }
+
+  .error-dismiss:hover {
+    @apply bg-red-800/20 border-red-800/30 scale-110;
+  }
+
+  .error-dismiss:active {
+    @apply scale-95;
+  }
+
+  /* Label Preview Components */
+  .previews-container {
+    @apply flex-auto min-w-[300px] m-2.5;
+  }
+
+  .flex-container {
+    @apply flex flex-wrap gap-5;
+  }
+
+  .label-pair {
+    @apply flex items-center gap-2.5;
+  }
+
+  .label-pair img {
+    @apply block h-auto max-h-[50px] w-auto;
+  }
+
+  .label-pair img.full-label {
+    @apply flex-grow-5 h-[50px];
+  }
+
+  .label-pair img.small-label {
+    @apply flex-grow h-6;
+  }
+
+  .preview-error,
+  .preview-loading,
+  .no-previews {
+    @apply text-center py-10 text-gray-600;
+  }
+
+  /* Logs Components */
+  .logs-bar {
+    @apply fixed bottom-0 left-0 right-0 bg-slate-50 border-t-2 border-gray-200 z-50 transition-all duration-300;
+  }
+
+  .logs-bar.collapsed {
+    @apply h-10;
+  }
+
+  .logs-bar.expanded {
+    @apply h-auto max-h-[80vh] overflow-y-auto;
+  }
+
+  .logs-content {
+    @apply p-4 bg-white;
+  }
+
+  /* Floating Print Button */
+  .floating-print-button {
+    @apply fixed bottom-4 right-4 z-40 w-14 h-14 rounded-full shadow-lg transition-all duration-200;
+  }
+
+  .floating-print-button.disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+}
+
+/* ========================================================================
+   5. RESPONSIVE DESIGN - MOBILE FIRST
+   ======================================================================== */
+
+/* Media queries that use @apply directives for Tailwind integration */
+@media (max-width: 768px) {
+  .action-toolbar {
+    @apply px-3 py-2 gap-2;
+  }
+  
+  .primary-actions,
+  .secondary-actions {
+    @apply gap-2;
+  }
+  
+  .action-btn {
+    @apply px-3 py-2 text-xs min-h-[40px];
+  }
+  
+  .btn-text {
+    @apply hidden;
+  }
+  
+  .btn-icon {
+    @apply text-lg;
+  }
+
+  .checkboxLabel {
+    @apply text-xs px-2.5 py-1.5;
+  }
+  
+  .checkboxLabel input[type="checkbox"] {
+    @apply w-4 h-4;
+  }
+  
+  .history-panel {
+    @apply w-screen left-0 right-0;
+  }
+  
+  .history-backdrop {
+    @apply block;
+  }
+  
+  .help-modal-backdrop {
+    @apply p-2;
+  }
+  
+  .help-modal {
+    @apply max-h-[95vh] rounded-xl;
+  }
+  
+  .help-modal-header {
+    @apply px-5 py-4;
+  }
+  
+  .help-modal-header h2 {
+    @apply text-lg;
+  }
+  
+  .help-modal-content {
+    @apply p-5;
+  }
+}
+
+@media (max-width: 480px) {
+  .action-toolbar {
+    @apply px-2 py-1.5 gap-1.5;
+  }
+  
+  .primary-actions,
+  .secondary-actions {
+    @apply gap-1.5;
+  }
+  
+  .action-btn {
+    @apply px-2.5 py-2 min-h-[36px];
+  }
+  
+  .checkboxLabel {
+    @apply text-xs px-2 py-1;
+  }
+}
+
+@media (min-width: 1200px) {
+  .action-toolbar {
+    @apply px-8 py-4;
+  }
+  
+  .print-options-inline {
+    @apply p-5 gap-4;
+  }
+}
+
+/* ========================================================================
+   6. ACCESSIBILITY & USER PREFERENCES
+   ======================================================================== */

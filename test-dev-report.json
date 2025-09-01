@@ -1,0 +1,28 @@
+{
+  "success": true,
+  "duration": 30020,
+  "timestamp": "2025-08-05T17:06:01.105Z",
+  "summary": {
+    "tsErrors": 0,
+    "runtimeErrors": 0,
+    "warnings": 2,
+    "totalErrors": 0
+  },
+  "details": {
+    "typeScriptErrors": [],
+    "runtimeErrors": [],
+    "warnings": [
+      {
+        "timestamp": 1754413533290,
+        "line": "\u001b[0;32m[Python]\u001b[0m deprecation warning: brother_ql.devicedependent is deprecated and will be removed in a future release",
+        "type": "warning"
+      },
+      {
+        "timestamp": 1754413534920,
+        "line": "\u001b[0;32m[Python]\u001b[0m deprecation warning: brother_ql.devicedependent is deprecated and will be removed in a future release",
+        "type": "warning"
+      }
+    ],
+    "otherErrors": []
+  }
+}

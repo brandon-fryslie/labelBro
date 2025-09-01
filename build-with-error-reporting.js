@@ -8,7 +8,7 @@ const ts = require('typescript');
 const typiaTransformer = {
   name: 'typia-transformer',
   setup(build) {
-    build.onLoad({ filter: /\.ts$/ }, async (args) => {
+    build.onLoad({ filter: /\.tsx?$/ }, async (args) => {
       const source = await fs.promises.readFile(args.path, 'utf8');
       
       try {
@@ -20,7 +20,9 @@ const typiaTransformer = {
           esModuleInterop: true,
           allowSyntheticDefaultImports: true,
           skipLibCheck: true,
-          moduleResolution: ts.ModuleResolutionKind.Node10
+          moduleResolution: ts.ModuleResolutionKind.Node10,
+          jsx: ts.JsxEmit.ReactJSX,
+          jsxImportSource: 'react'
         };
         
         // Create a temporary source file
@@ -70,7 +72,9 @@ const typiaTransformer = {
             strict: true,
             esModuleInterop: true,
             allowSyntheticDefaultImports: true,
-            skipLibCheck: true
+            skipLibCheck: true,
+            jsx: ts.JsxEmit.ReactJSX,
+            jsxImportSource: 'react'
           }
         });
         
@@ -179,12 +183,14 @@ const errorReportingPlugin = {
 
 // Build configuration
 const buildConfig = {
-  entryPoints: ['src/main.ts'],
+  entryPoints: ['src/main.tsx'],
   outfile: 'label_bro/static/js/bundle.js',
   target: 'es2020',
   format: 'iife',
   sourcemap: true,
   bundle: true,
+  jsx: 'automatic',
+  jsxImportSource: 'react',
   plugins: [errorReportingPlugin]
 };
 

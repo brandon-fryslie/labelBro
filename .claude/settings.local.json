@@ -15,7 +15,18 @@
       "Bash(rm:*)",
       "Bash(echo \"Exit code: $?\")",
       "Bash(chmod:*)",
-      "Bash(./test-exit-code.sh:*)"
+      "Bash(./test-exit-code.sh:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(pkill:*)",
+      "Bash(npm install:*)",
+      "Bash(brother_ql discover:*)",
+      "Bash(mv:*)",
+      "Bash(npx vite:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(touch:*)"
     ],
     "deny": []
   }

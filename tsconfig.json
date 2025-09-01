@@ -10,10 +10,13 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
   "include": [
     "src/**/*.ts",
+    "src/**/*.tsx",
     "label_bro/static/js/**/*.ts"
   ],
   "exclude": [

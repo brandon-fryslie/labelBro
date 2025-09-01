@@ -6,6 +6,9 @@ export interface PrinterData {
   is_connected: boolean;
   media_info?: string;
   model?: string;
+  model_number?: string;  // Backend uses model_number
+  backend?: string;
+  identifier?: string;
   ip?: string;
   media_loaded?: boolean;
   printer_ready?: boolean;

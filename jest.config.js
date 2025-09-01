@@ -1,13 +1,13 @@
 module.exports = {
   preset: 'ts-jest',
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   testMatch: [
     '**/__tests__/**/*.{ts,tsx}',
     '**/?(*.)+(spec|test).{ts,tsx}'
   ],
   transform: {
-    '^.+\\.ts$': ['ts-jest', {
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
       tsconfig: {
         target: 'ES2022',
         module: 'CommonJS',
@@ -16,6 +16,7 @@ module.exports = {
         allowSyntheticDefaultImports: true,
         strict: true,
         skipLibCheck: true,
+        jsx: 'react-jsx',
         lib: ['ES2022', 'DOM', 'DOM.Iterable']
       }
     }]
@@ -25,7 +26,7 @@ module.exports = {
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
-    '!src/main.ts' // Exclude main entry point from coverage
+    '!src/main.tsx' // Exclude main entry point from coverage
   ],
   coverageThreshold: {
     global: {

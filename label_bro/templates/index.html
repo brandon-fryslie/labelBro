@@ -1,62 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="printer-selection-container">
-    <div class="printer-selector">
-        <div class="printer-selector-header">
-            <label for="printerSelect">Select Printer:</label>
-            <button id="refreshPrinters" class="refresh-button" onclick="refreshPrinters()">🔄 Refresh</button>
-        </div>
-        <select id="printerSelect" name="printerSelect">
-            <option value="">Loading printers...</option>
-        </select>
-        <div id="printerStatus" class="printer-status"></div>
-        <div id="discoveryStatus" class="discovery-status"></div>
-    </div>
-    
-    <div class="manual-connection">
-        <div class="manual-connection-header">
-            <h3>Manual Connection</h3>
-            <small>Enter an IP address (e.g., 192.168.1.100) or subnet (e.g., 192.168.1.0/24)</small>
-        </div>
-        <div class="manual-connection-input">
-            <input type="text" id="manualTarget" placeholder="192.168.1.100 or 192.168.1.0/24" />
-            <button id="testConnection" onclick="testManualConnection()">Test Connection</button>
-        </div>
-        <div id="manualConnectionStatus" class="manual-connection-status"></div>
-        <div id="manualConnectionResults" class="manual-connection-results"></div>
-    </div>
-</div>
-<div class="print-button-container">
-    <button class="full-width-button" onclick="printLabels()">Print</button>
-</div>
-<div class="print-button-container">
-    <small>Each line defines 1 or more labels.</small><br>
-    <small>Use checkboxes for sizes.</small><br>
-    <small>Use format 'text; number' (e.g. 'My Stuff; 4) to print multiple copies.</small>
-</div>
-<div class="main-container">
-    <div class="textarea-container">
-        <form id="labelForm">
-            <label for="printFullLabel" class="checkboxLabel">
-                <input type="checkbox" id="printFullLabel" name="printFullLabel" value="printSmallLabel" checked>
-                Big Label?
-            </label>
-            <label for="printSmallLabel" class="checkboxLabel">
-                <input type="checkbox" id="printSmallLabel" name="printSmallLabel" value="printSmallLabel" checked>
-                Small Label?
-            </label>
-            <textarea id="labelText" name="labelText" rows="10" cols="50"></textarea>
-        </form>
-    </div>
-    <div class="previews-container">
-        <h2>Preview</h2>
-        <div id="labelPreviews" class="flex-container"></div>
-    </div>
-</div>
-<div class="print-button-container">
-    <button class="full-width-button" onclick="printLabels()">Print</button>
-</div>
-<p id="waiting"></p>
-<p id="response"></p>
+<!-- React application will mount here -->
+<div id="react-root"></div>
 {% endblock %}
