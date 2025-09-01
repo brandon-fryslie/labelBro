@@ -1,79 +1,84 @@
-// API client for labelBro backend with runtime type validation
-import type { 
+// API communication module for the labelBro frontend
+import { 
   LabelPreviewData, 
   PrintersResponse, 
+  PrintRequest, 
   DiscoveryResponse, 
-  ManualConnectionResult,
-  PrintRequest 
+  ManualConnectionResult 
 } from '../types';
 import { TypeValidator, ValidationError, ValidationReporter } from '../validation';
 
-// API endpoints
-const API_ENDPOINT = '/previewLabels';
-const PRINTERS_ENDPOINT = '/printers';
-const DISCOVERY_ENDPOINT = '/printers/discover';
-const PRINT_ENDPOINT = '/printLabels';
-const TEST_ENDPOINT = '/printers/test';
+// API endpoints - we'll use relative URLs for same-origin requests
+const API_BASE = '/api';
+const PREVIEW_ENDPOINT = `${API_BASE}/preview`;
+const PRINTERS_ENDPOINT = `${API_BASE}/printers`;
+const PRINT_ENDPOINT = `${API_BASE}/print`;
+const DISCOVERY_ENDPOINT = `${API_BASE}/discover`;
+const TEST_ENDPOINT = `${API_BASE}/test-connection`;
 
 export class LabelBroAPI {
-  // Fetch label previews from the server with runtime validation
-  static async fetchLabelPreviews(labelText: string): Promise<LabelPreviewData | null> {
-    try {
-      const response = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          data: {
-            text: labelText,
-            shouldPrintFullLabel: (document.getElementById('printFullLabel') as HTMLInputElement).checked,
-            shouldPrintSmallLabel: (document.getElementById('printSmallLabel') as HTMLInputElement).checked,
-          } 
-        })
-      });
+  // Fetch label previews from the backend
+  static async fetchLabelPreviews(text: string): Promise<LabelPreviewData> {
+    const response = await fetch(PREVIEW_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ text })
+    });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const rawData = await response.json();
-      
-      // Runtime validation
-      try {
-        return TypeValidator.validateLabelPreviewData(rawData);
-      } catch (error) {
-        if (error instanceof ValidationError) {
-          ValidationReporter.logValidationError(error);
-          ValidationReporter.reportError(error);
-        }
-        throw error;
-      }
-    } catch (error) {
-      console.error('Error fetching label previews:', error);
-      return null;
+    const data = await response.json();
+    
+    // Convert base64 strings to data URLs for image display
+    if (data.full_labels) {
+      data.full_labels = data.full_labels.map((base64: string) => 
+        `data:image/png;base64,${base64}`
+      );
     }
+    if (data.small_labels) {
+      data.small_labels = data.small_labels.map((base64: string) => 
+        `data:image/png;base64,${base64}`
+      );
+    }
+
+    return data;
   }
 
-  // Fetch current printer status with runtime validation
+  // Fetch current printers with runtime validation
   static async fetchPrinters(): Promise<Record<string, import('../types').PrinterData> | null> {
     try {
-      const response = await fetch(PRINTERS_ENDPOINT);
+      const response = await fetch(PRINTERS_ENDPOINT, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
       const rawData = await response.json();
-      
-      if (!response.ok) {
-        return null;
-      }
 
       // Runtime validation with Typia
       try {
-        const validatedData = TypeValidator.validatePrintersResponse(rawData);
-        return validatedData.printers;
+        const validated = TypeValidator.validatePrintersResponse(rawData);
+        return validated.printers;
       } catch (error) {
         if (error instanceof ValidationError) {
           ValidationReporter.logValidationError(error);
           ValidationReporter.reportError(error);
+        } else if (error instanceof Error && error.message.includes('no transform has been configured')) {
+          // Typia configuration error - send to backend for visibility
+          const configError = new ValidationError(
+            'Typia configuration error: ' + error.message,
+            [],
+            { configurationIssue: true, originalError: error.message }
+          );
+          ValidationReporter.logValidationError(configError);
+          ValidationReporter.reportError(configError);
+          
+          // For now, return the raw data since validation can't work
+          console.warn('⚠️ Typia validation disabled - returning unvalidated data');
+          return rawData.printers || {};
         }
+        ValidationReporter.reportError(error as ValidationError);
         throw error;
       }
     } catch (error) {
@@ -211,5 +216,10 @@ export class LabelBroAPI {
       }
       throw error;
     }
+  }
+
+  // Connect manually to a printer via IP
+  static async connectManually(ipAddress: string): Promise<ManualConnectionResult> {
+    return LabelBroAPI.testManualConnection(ipAddress);
   }
 }

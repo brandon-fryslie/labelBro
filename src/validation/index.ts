@@ -162,7 +162,7 @@ export class TypeValidator {
       errors.push(this.createValidationError('$input', 'object', data));
     } else {
       const obj = data as any;
-      if (!obj.printers || typeof obj.printers !== 'object') {
+      if (!obj.printers && !obj.data) {
         errors.push(this.createValidationError('$input.printers', 'object', obj.printers));
       }
     }
@@ -187,12 +187,6 @@ export class TypeValidator {
       const obj = data as any;
       if (typeof obj.success !== 'boolean') {
         errors.push(this.createValidationError('$input.success', 'boolean', obj.success));
-      }
-      if (typeof obj.target !== 'string') {
-        errors.push(this.createValidationError('$input.target', 'string', obj.target));
-      }
-      if (!Array.isArray(obj.printers_found)) {
-        errors.push(this.createValidationError('$input.printers_found', 'array', obj.printers_found));
       }
     }
 
@@ -243,7 +237,12 @@ export class ValidationReporter {
   }
 
   // Report validation error to backend for centralized logging
-  static reportError(error: ValidationError): void {
+  static reportError(error: ValidationError | unknown): void {
+    if (!(error instanceof ValidationError)) {
+      console.warn('Non-validation error passed to reportError:', error);
+      return;
+    }
+    
     const debugInfo = error.toDebugInfo();
     
     console.log('VALIDATION_ERROR:', debugInfo);

@@ -12,7 +12,8 @@ export function usePrinters() {
     setConnectionStatus, 
     setConnectionResults,
     setStatusBar,
-    setError 
+    setError,
+    addLog 
   } = useApp();
 
   // Fetch current printers
@@ -20,6 +21,7 @@ export function usePrinters() {
     try {
       setIsDiscovering(true);
       setError(null);
+      addLog('Fetching printer list...');
       
       const printers = await LabelBroAPI.fetchPrinters();
       if (printers) {
@@ -28,19 +30,24 @@ export function usePrinters() {
         // Update status bar based on connected printers
         const connectedPrinters = Object.values(printers).filter(p => p.is_connected);
         if (connectedPrinters.length > 0) {
-          setStatusBar(`${connectedPrinters.length} printer(s) connected`, '✅');
+          const message = `${connectedPrinters.length} printer(s) connected`;
+          setStatusBar(message, '✅');
+          addLog(message);
         } else {
           setStatusBar('No printers connected', '🔌');
+          addLog('No printers found');
         }
       }
     } catch (error) {
       console.error('Error fetching printers:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch printers');
+      const errorMsg = error instanceof Error ? error.message : 'Failed to fetch printers';
+      setError(errorMsg);
       setStatusBar('Connection error', '❌');
+      addLog(`Error: ${errorMsg}`);
     } finally {
       setIsDiscovering(false);
     }
-  }, [setPrinters, setIsDiscovering, setStatusBar, setError]);
+  }, [setPrinters, setIsDiscovering, setStatusBar, setError, addLog]);
 
   // Discover printers on network
   const discoverPrinters = useCallback(async () => {
@@ -48,99 +55,99 @@ export function usePrinters() {
       setIsDiscovering(true);
       setError(null);
       setConnectionStatus('Discovering printers...');
+      addLog('Starting network discovery...');
       
-      const discoveryResult = await LabelBroAPI.discoverPrinters();
-      if (discoveryResult) {
-        setPrinters(discoveryResult.printers);
+      const result = await LabelBroAPI.discoverPrinters();
+      if (result && result.success) {
+        const discoveredCount = Object.keys(result.data.printers).length;
+        const message = discoveredCount > 0 
+          ? `Discovered ${discoveredCount} printer(s)` 
+          : 'No printers found on network';
         
-        const printerCount = Object.keys(discoveryResult.printers).length;
-        const connectedPrinters = Object.entries(discoveryResult.printers)
-          .filter(([_, printer]) => printer.is_connected);
+        setConnectionStatus(message);
+        setConnectionResults(message);
+        addLog(message);
         
-        setConnectionResults(`Found ${printerCount} printer(s)`);
-        
-        if (printerCount > 0) {
-          setStatusBar(`Found ${printerCount} printer(s)`, '🔍');
-          
-          // Try to restore previously selected printer, otherwise select first connected
-          const storedPrinterId = localStorage.getItem('labelBro_selectedPrinter');
-          let selectedPrinterId: string | null = null;
-          
-          if (storedPrinterId && discoveryResult.printers[storedPrinterId]) {
-            // Previous printer is available, restore it
-            selectedPrinterId = storedPrinterId;
-            setSelectedPrinter(selectedPrinterId);
-            setStatusBar(`Restored connection to ${discoveryResult.printers[selectedPrinterId].display_name}`, '✅');
-          } else if (connectedPrinters.length > 0) {
-            // No previous selection or it's not available, select first connected printer
-            const [firstPrinterId] = connectedPrinters[0];
-            selectedPrinterId = firstPrinterId;
-            setSelectedPrinter(selectedPrinterId);
-            setStatusBar(`Auto-connected to ${discoveryResult.printers[selectedPrinterId].display_name}`, '✅');
-          }
-          
-          // If we have a connected printer and some label text, user is ready to print
-          if (selectedPrinterId && discoveryResult.printers[selectedPrinterId].is_connected) {
-          }
-        } else {
-          setStatusBar('No printers found', '🔍');
-        }
+        // Update printers list
+        await fetchPrinters();
+      } else if (result) {
+        const errorMsg = result.error || 'Discovery failed';
+        setConnectionStatus(errorMsg);
+        setError(errorMsg);
+        addLog(`Discovery error: ${errorMsg}`);
       } else {
-        setConnectionResults('Discovery failed');
-        setStatusBar('Discovery failed', '❌');
+        const errorMsg = 'Discovery failed - no response';
+        setConnectionStatus(errorMsg);
+        setError(errorMsg);
+        addLog(`Discovery error: ${errorMsg}`);
       }
     } catch (error) {
-      console.error('Error discovering printers:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Discovery failed';
-      setError(errorMessage);
-      setConnectionResults(errorMessage);
-      setStatusBar('Discovery error', '❌');
+      console.error('Discovery error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Network discovery failed';
+      setConnectionStatus(errorMsg);
+      setError(errorMsg);
+      addLog(`Discovery error: ${errorMsg}`);
     } finally {
       setIsDiscovering(false);
-      setConnectionStatus('');
     }
-  }, [setPrinters, setSelectedPrinter, setIsDiscovering, setConnectionStatus, setConnectionResults, setStatusBar, setError]);
+  }, [setIsDiscovering, setConnectionStatus, setConnectionResults, setError, fetchPrinters, addLog]);
 
-  // Test manual connection
-  const testManualConnection = useCallback(async (target: string) => {
+  // Manual connection
+  const connectManually = useCallback(async (ipAddress: string) => {
+    if (!ipAddress) {
+      setError('Please enter an IP address');
+      return;
+    }
+
     try {
-      setConnectionStatus('Testing connection...');
-      setConnectionResults('');
+      setIsDiscovering(true);
       setError(null);
+      setConnectionStatus(`Connecting to ${ipAddress}...`);
+      addLog(`Attempting manual connection to ${ipAddress}...`);
       
-      const result: ManualConnectionResult = await LabelBroAPI.testManualConnection(target);
+      const result: ManualConnectionResult = await LabelBroAPI.connectManually(ipAddress);
       
-      if (result.success && result.printers_found.length > 0) {
-        // Convert printers array to Record format
-        const printersRecord: Record<string, any> = {};
-        result.printers_found.forEach((printer, index) => {
-          const id = printer.id || `manual_${index}`;
-          printersRecord[id] = printer;
-        });
+      if (result.success) {
+        const message = `Connected to ${result.model || 'printer'} at ${ipAddress}`;
+        setConnectionStatus(message);
+        setConnectionResults(message);
+        setStatusBar('Printer connected', '✅');
+        addLog(message);
         
-        setPrinters(printersRecord);
-        setConnectionResults(`✅ Found ${result.printers_found.length} printer(s) at ${target}`);
-        setStatusBar(`Connected to ${target}`, '✅');
-        
-        // Auto-select the first printer
-        if (result.printers_found.length > 0) {
-          const firstPrinterId = result.printers_found[0].id || 'manual_0';
-          setSelectedPrinter(firstPrinterId);
-        }
+        // Refresh printers list
+        await fetchPrinters();
       } else {
-        setConnectionResults(`❌ No printers found at ${target}`);
-        setStatusBar('Connection failed', '❌');
+        const errorMsg = result.error || 'Connection failed';
+        setConnectionStatus(errorMsg);
+        setConnectionResults(errorMsg);
+        setError(errorMsg);
+        addLog(`Connection failed: ${errorMsg}`);
       }
     } catch (error) {
-      console.error('Error testing manual connection:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Connection test failed';
-      setError(errorMessage);
-      setConnectionResults(`❌ ${errorMessage}`);
-      setStatusBar('Connection error', '❌');
+      console.error('Manual connection error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Connection failed';
+      setConnectionStatus(errorMsg);
+      setError(errorMsg);
+      addLog(`Connection error: ${errorMsg}`);
     } finally {
-      setConnectionStatus('');
+      setIsDiscovering(false);
     }
-  }, [setPrinters, setSelectedPrinter, setConnectionStatus, setConnectionResults, setStatusBar, setError]);
+  }, [setIsDiscovering, setConnectionStatus, setConnectionResults, setStatusBar, setError, fetchPrinters, addLog]);
+
+  // Select printer
+  const selectPrinter = useCallback((printerId: string | null) => {
+    setSelectedPrinter(printerId);
+    if (printerId) {
+      const printer = state.printers[printerId];
+      if (printer) {
+        const message = `Selected printer: ${printer.model}`;
+        setStatusBar(message, '🖨️');
+        addLog(message);
+      }
+    } else {
+      addLog('Printer deselected');
+    }
+  }, [setSelectedPrinter, state.printers, setStatusBar, addLog]);
 
   return {
     printers: state.printers,
@@ -148,9 +155,11 @@ export function usePrinters() {
     isDiscovering: state.isDiscovering,
     connectionStatus: state.connectionStatus,
     connectionResults: state.connectionResults,
+    connectionMode: state.connectionMode,
+    manualIp: state.manualIp,
     fetchPrinters,
     discoverPrinters,
-    testManualConnection,
-    setSelectedPrinter,
+    connectManually,
+    selectPrinter,
   };
 }

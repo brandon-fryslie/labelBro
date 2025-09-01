@@ -12,7 +12,8 @@ export function useLabels() {
     setClearAfterPrint,
     setLabelPreviews,
     setIsGeneratingPreviews,
-    setError 
+    setError,
+    addLog 
   } = useApp();
 
   // Generate label previews
@@ -27,15 +28,18 @@ export function useLabels() {
     try {
       setIsGeneratingPreviews(true);
       setError(null);
+      addLog('Generating label previews...');
       const previews = await LabelBroAPI.fetchLabelPreviews(labelText);
       setLabelPreviews(previews);
+      addLog('Label previews generated successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate previews';
       setError(errorMessage);
+      addLog(`Preview generation failed: ${errorMessage}`);
     } finally {
       setIsGeneratingPreviews(false);
     }
-  }, [state.labelText, setLabelPreviews, setIsGeneratingPreviews, setError]);
+  }, [state.labelText, setLabelPreviews, setIsGeneratingPreviews, setError, addLog]);
 
   // Print labels
   const printLabels = useCallback(async (printerId?: string) => {
@@ -46,6 +50,7 @@ export function useLabels() {
 
     try {
       setError(null);
+      addLog(`Printing label: "${state.labelText}"`);
       
       const printRequest: PrintRequest = {
         data: {
@@ -61,7 +66,9 @@ export function useLabels() {
       // Handle print result
       if (result.error) {
         setError(result.error);
+        addLog(`Print failed: ${result.error}`);
       } else {
+        addLog('Label printed successfully');
         
         // Add to history if print was successful
         if ((window as any).addToLabelHistory) {
@@ -74,6 +81,7 @@ export function useLabels() {
         // Clear textarea if clearAfterPrint is enabled
         if (state.clearAfterPrint) {
           setLabelText('');
+          addLog('Label text cleared after print');
         }
       }
       
@@ -81,9 +89,10 @@ export function useLabels() {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to print labels';
       setError(errorMessage);
+      addLog(`Print error: ${errorMessage}`);
       throw error;
     }
-  }, [state.labelText, state.printFullLabel, state.printSmallLabel, state.selectedPrinterId, setError]);
+  }, [state.labelText, state.printFullLabel, state.printSmallLabel, state.selectedPrinterId, state.clearAfterPrint, setLabelText, setError, addLog]);
 
   // Update label text and trigger preview generation
   const updateLabelText = useCallback((text: string) => {

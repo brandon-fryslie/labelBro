@@ -5,7 +5,7 @@ export interface PrinterData {
   display_name: string;
   is_connected: boolean;
   media_info?: string;
-  model?: string;
+  model: string;
   model_number?: string;  // Backend uses model_number
   backend?: string;
   identifier?: string;
@@ -14,6 +14,7 @@ export interface PrinterData {
   printer_ready?: boolean;
   media_width?: string;
   media_type?: string;
+  status: string;
 }
 
 export interface PrintersResponse {
@@ -36,19 +37,23 @@ export interface PrintRequest {
 }
 
 export interface DiscoveryResponse {
-  printers: Record<string, PrinterData>;
-  discovery_methods: {
-    mdns?: boolean;
-    network_scan?: boolean;
-    usb?: boolean;
+  success: boolean;
+  data: {
+    printers: Record<string, PrinterData>;
+    discovery_methods?: {
+      mdns?: boolean;
+      network_scan?: boolean;
+      usb?: boolean;
+    };
   };
   error?: string;
 }
 
 export interface ManualConnectionResult {
   success: boolean;
-  target: string;
-  printers_found: PrinterData[];
+  model?: string;
+  target?: string;
+  printers_found?: PrinterData[];
   error?: string;
 }
 

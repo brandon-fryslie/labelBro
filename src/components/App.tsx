@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AppProvider, useApp } from '../context/AppContext';
 import { StatusBar } from './StatusBar';
 import { PrinterPanel } from './PrinterPanel';
-import { LogsBar } from './LogsBar';
+import { LogsPanel } from './LogsPanel';
 import { LabelCreator } from './LabelCreator';
 import { LabelPreview } from './LabelPreview';
 import { ErrorDisplay } from './ErrorDisplay';
@@ -66,14 +66,8 @@ function AppContent(): React.ReactElement {
         onClose={handleHelpClose} 
       />
       
-      {/* Collapsible Bottom Bar - Logs */}
-      <div className="bottom-bar-section">
-        <LogsBar />
-      </div>
-      
-      {/* Fixed Bottom Div */}
-      <div className="fixed-bottom-div">
-      </div>
+      {/* Collapsible Bottom Log Panel - Fixed at bottom */}
+      <LogsPanel />
     </div>
   );
 }

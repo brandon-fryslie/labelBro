@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { usePrinters } from '../hooks/usePrinters';
-import { useStoredConnectionMode, useStoredManualIp } from '../hooks/useLocalStorage';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 export function PrinterPanel(): React.ReactElement {
-  const { state, setConnectionMode, setManualIp } = useApp();
+  const { state, togglePrinterPanel, setConnectionMode, setManualIp } = useApp();
   const { 
     printers, 
     selectedPrinterId, 
@@ -12,13 +12,13 @@ export function PrinterPanel(): React.ReactElement {
     connectionStatus, 
     connectionResults,
     discoverPrinters, 
-    testManualConnection, 
-    setSelectedPrinter 
+    connectManually, 
+    selectPrinter 
   } = usePrinters();
 
   // Load stored preferences
-  const [storedConnectionMode, setStoredConnectionMode] = useStoredConnectionMode();
-  const [storedManualIp, setStoredManualIp] = useStoredManualIp();
+  const [storedConnectionMode, setStoredConnectionMode] = useLocalStorage<'manual' | 'auto'>('labelBro_connectionMode', 'auto');
+  const [storedManualIp, setStoredManualIp] = useLocalStorage<string>('labelBro_manualIp', '');
 
   // Initialize from localStorage and auto-discover
   useEffect(() => {
@@ -27,143 +27,143 @@ export function PrinterPanel(): React.ReactElement {
     setConnectionMode(mode);
     setManualIp(storedManualIp);
     
-    // Auto-discover on page load if in auto mode
+    // Auto-discover if in auto mode
     if (mode === 'auto') {
       discoverPrinters();
     }
-  }, [setConnectionMode, setManualIp, storedConnectionMode, storedManualIp, discoverPrinters]);
+  }, []);
 
-  const handleModeChange = (mode: 'manual' | 'auto') => {
+  const handleConnectionModeChange = (mode: 'manual' | 'auto') => {
     setConnectionMode(mode);
     setStoredConnectionMode(mode);
-  };
-
-  const handleManualIpChange = (ip: string) => {
-    setManualIp(ip);
-    setStoredManualIp(ip);
-  };
-
-  const handleConnect = async () => {
-    if (state.manualIp.trim()) {
-      await testManualConnection(state.manualIp.trim());
+    
+    if (mode === 'auto') {
+      discoverPrinters();
     }
   };
 
-  const handleRefresh = async () => {
-    await discoverPrinters();
+  const handleManualIpChange = (value: string) => {
+    setManualIp(value);
+    setStoredManualIp(value);
   };
 
-  const handlePrinterSelection = (printerId: string | null) => {
-    setSelectedPrinter(printerId);
-    // Store selected printer in localStorage
-    if (printerId) {
-      localStorage.setItem('labelBro_selectedPrinter', printerId);
-    } else {
-      localStorage.removeItem('labelBro_selectedPrinter');
+  const handleManualConnect = async () => {
+    if (state.manualIp) {
+      await connectManually(state.manualIp);
     }
   };
 
-  const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter') {
-      handleConnect();
-    }
+  const handleSelectPrinter = (printerId: string) => {
+    selectPrinter(printerId === selectedPrinterId ? null : printerId);
   };
+
+  const connectButtonDisabled = !state.manualIp || isDiscovering;
 
   return (
     <div className={`printer-panel ${state.isPrinterPanelExpanded ? '' : 'hidden'}`}>
       <div className="printer-selection-container">
-        <div className="printer-connection-mode">
-          <h3>Printer Connection</h3>
-          <div className="connection-mode-selector">
-            <label className="radio-label">
-              <input
-                type="radio"
-                name="connectionMode"
-                value="manual"
-                checked={state.connectionMode === 'manual'}
-                onChange={() => handleModeChange('manual')}
-              />
-              Manual IP Address
-            </label>
-            <label className="radio-label">
-              <input
-                type="radio"
-                name="connectionMode"
-                value="auto"
-                checked={state.connectionMode === 'auto'}
-                onChange={() => handleModeChange('auto')}
-              />
-              Auto Discovery
-            </label>
-          </div>
+        <h3>Printer Connection</h3>
+        
+        {/* Connection Mode Selector */}
+        <div className="connection-mode-selector">
+          <button 
+            className={`mode-button ${state.connectionMode === 'auto' ? 'active' : ''}`}
+            onClick={() => handleConnectionModeChange('auto')}
+          >
+            🔍 Auto Discovery
+          </button>
+          <button 
+            className={`mode-button ${state.connectionMode === 'manual' ? 'active' : ''}`}
+            onClick={() => handleConnectionModeChange('manual')}
+          >
+            ⌨️ Manual IP
+          </button>
         </div>
 
-        {state.connectionMode === 'manual' && (
-          <div className="connection-section">
-            <div className="manual-connection-header">
-              <h4>Manual IP Connection</h4>
-              <small>Enter printer IP address (e.g., 192.168.1.100)</small>
-            </div>
-            <div className="manual-connection-input">
-              <input
-                type="text"
-                value={state.manualIp}
-                onChange={(e) => handleManualIpChange(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="192.168.1.100"
-                disabled={isDiscovering}
-              />
-              <button onClick={handleConnect} disabled={isDiscovering || !state.manualIp.trim()}>
-                {isDiscovering ? 'Connecting...' : 'Connect'}
-              </button>
-            </div>
-            <div className="manual-connection-status">{connectionStatus}</div>
-            <div className="manual-connection-results">{connectionResults}</div>
-          </div>
-        )}
-
-        {state.connectionMode === 'auto' && (
-          <div className="connection-section">
-            <div className="printer-selector">
-              <div className="printer-selector-header">
-                <label htmlFor="printerSelect">Auto-Discovered Printers:</label>
-                <button className="refresh-button" onClick={handleRefresh} disabled={isDiscovering}>
-                  🔄 {isDiscovering ? 'Discovering...' : 'Refresh'}
+        <div className="connection-section">
+          {state.connectionMode === 'manual' ? (
+            <div className="manual-connection">
+              <div className="ip-input-group">
+                <input 
+                  type="text" 
+                  className="ip-input" 
+                  placeholder="Enter printer IP (e.g., 192.168.1.100)"
+                  value={state.manualIp}
+                  onChange={(e) => handleManualIpChange(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !connectButtonDisabled) {
+                      handleManualConnect();
+                    }
+                  }}
+                />
+                <button 
+                  className="connect-button" 
+                  onClick={handleManualConnect}
+                  disabled={connectButtonDisabled}
+                >
+                  {isDiscovering ? '⏳' : 'Connect'}
                 </button>
               </div>
-              <select
-                value={selectedPrinterId || ''}
-                onChange={(e) => handlePrinterSelection(e.target.value || null)}
+              {connectionResults && (
+                <div className="connection-result">
+                  {connectionResults}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="auto-discovery">
+              {/* Available Printers */}
+              {Object.keys(printers).length > 0 ? (
+                <div className="printer-list">
+                  {Object.entries(printers).map(([id, printer]) => (
+                    <div 
+                      key={id} 
+                      className={`printer-item ${selectedPrinterId === id ? 'selected' : ''}`}
+                      onClick={() => handleSelectPrinter(id)}
+                    >
+                      <div className="printer-info">
+                        <div className="printer-icon">🖨️</div>
+                        <div className="printer-details">
+                          <h4>{printer.model}</h4>
+                          <p>{printer.status}</p>
+                        </div>
+                      </div>
+                      <div className="printer-status">
+                        <span className={`status-dot ${printer.is_connected ? 'connected' : 'disconnected'}`}></span>
+                        <span>{printer.is_connected ? 'Connected' : 'Offline'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="no-printers">
+                  <p>{isDiscovering ? 'Searching for printers...' : 'No printers found'}</p>
+                  <small>Click the button below to search again</small>
+                </div>
+              )}
+              
+              {/* Discover Button */}
+              <button 
+                className="discover-button" 
+                onClick={discoverPrinters}
                 disabled={isDiscovering}
               >
-                {Object.keys(printers).length === 0 ? (
-                  <option value="">{isDiscovering ? 'Discovering printers...' : 'No printers found - click Refresh'}</option>
-                ) : (
-                  <>
-                    <option value="">Select a printer...</option>
-                    {Object.entries(printers).map(([id, printer]) => (
-                      <option key={id} value={id}>
-                        {printer.display_name} {printer.is_connected ? '✅' : '❌'}
-                      </option>
-                    ))}
-                  </>
-                )}
-              </select>
-              <div className="printer-status">
-                {selectedPrinterId && printers[selectedPrinterId] && (
-                  <div>
-                    Status: {printers[selectedPrinterId].is_connected ? 'Connected' : 'Disconnected'}
-                    {printers[selectedPrinterId].media_info && (
-                      <div>Media: {printers[selectedPrinterId].media_info}</div>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="discovery-status">{connectionResults}</div>
+                {isDiscovering ? '⏳ Discovering...' : '🔄 Refresh Printers'}
+              </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
+}
+
+// Hook to persist connection mode
+function useStoredConnectionMode() {
+  return useLocalStorage<'manual' | 'auto'>('labelBro_connectionMode', 'auto');
+}
+
+// Hook to persist manual IP
+function useStoredManualIp() {
+  return useLocalStorage<string>('labelBro_manualIp', '');
 }

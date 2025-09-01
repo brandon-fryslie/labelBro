@@ -30,6 +30,9 @@ interface AppState {
   logsBarText: string;
   logsBarIcon: string;
   
+  // Logs state
+  logs: string[];
+  
   // Loading and error states
   isLoading: boolean;
   error: string | null;
@@ -56,6 +59,8 @@ type AppAction =
   | { type: 'SET_HELP_MODAL'; payload: boolean }
   | { type: 'SET_STATUS_BAR'; payload: { text: string; icon: string } }
   | { type: 'SET_LOGS_BAR'; payload: { text: string; icon: string } }
+  | { type: 'ADD_LOG'; payload: string }
+  | { type: 'CLEAR_LOGS' }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null };
 
@@ -84,6 +89,8 @@ const initialState: AppState = {
   isLogsPanelExpanded: false,
   logsBarText: 'No messages',
   logsBarIcon: '📋',
+  
+  logs: [],
   
   isLoading: false,
   error: null,
@@ -138,6 +145,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
         logsBarText: action.payload.text, 
         logsBarIcon: action.payload.icon 
       };
+    case 'ADD_LOG':
+      // Keep only the last 100 logs
+      return { 
+        ...state, 
+        logs: [action.payload, ...state.logs].slice(0, 100) 
+      };
+    case 'CLEAR_LOGS':
+      return { ...state, logs: [] };
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
     case 'SET_ERROR':
@@ -160,9 +175,9 @@ interface AppContextType {
   setConnectionResults: (results: string) => void;
   setIsDiscovering: (discovering: boolean) => void;
   setLabelText: (text: string) => void;
-  setPrintFullLabel: (print: boolean) => void;
-  setPrintSmallLabel: (print: boolean) => void;
-  setClearAfterPrint: (clear: boolean) => void;
+  setPrintFullLabel: (enabled: boolean) => void;
+  setPrintSmallLabel: (enabled: boolean) => void;
+  setClearAfterPrint: (enabled: boolean) => void;
   setLabelPreviews: (previews: LabelPreviewData | null) => void;
   setIsGeneratingPreviews: (generating: boolean) => void;
   togglePrinterPanel: () => void;
@@ -171,6 +186,8 @@ interface AppContextType {
   setHelpModal: (open: boolean) => void;
   setStatusBar: (text: string, icon: string) => void;
   setLogsBar: (text: string, icon: string) => void;
+  addLog: (message: string) => void;
+  clearLogs: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
@@ -179,99 +196,103 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // Provider component
-interface AppProviderProps {
-  children: React.ReactNode;
-}
-
-export function AppProvider({ children }: AppProviderProps): React.ReactElement {
+export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
-
+  
   // Action creators
   const setPrinters = useCallback((printers: Record<string, PrinterData>) => {
     dispatch({ type: 'SET_PRINTERS', payload: printers });
   }, []);
-
+  
   const setSelectedPrinter = useCallback((printerId: string | null) => {
     dispatch({ type: 'SET_SELECTED_PRINTER', payload: printerId });
   }, []);
-
+  
   const setConnectionMode = useCallback((mode: 'manual' | 'auto') => {
     dispatch({ type: 'SET_CONNECTION_MODE', payload: mode });
   }, []);
-
+  
   const setManualIp = useCallback((ip: string) => {
     dispatch({ type: 'SET_MANUAL_IP', payload: ip });
   }, []);
-
+  
   const setConnectionStatus = useCallback((status: string) => {
     dispatch({ type: 'SET_CONNECTION_STATUS', payload: status });
   }, []);
-
+  
   const setConnectionResults = useCallback((results: string) => {
     dispatch({ type: 'SET_CONNECTION_RESULTS', payload: results });
   }, []);
-
+  
   const setIsDiscovering = useCallback((discovering: boolean) => {
     dispatch({ type: 'SET_IS_DISCOVERING', payload: discovering });
   }, []);
-
+  
   const setLabelText = useCallback((text: string) => {
     dispatch({ type: 'SET_LABEL_TEXT', payload: text });
   }, []);
-
-  const setPrintFullLabel = useCallback((print: boolean) => {
-    dispatch({ type: 'SET_PRINT_FULL_LABEL', payload: print });
+  
+  const setPrintFullLabel = useCallback((enabled: boolean) => {
+    dispatch({ type: 'SET_PRINT_FULL_LABEL', payload: enabled });
   }, []);
-
-  const setPrintSmallLabel = useCallback((print: boolean) => {
-    dispatch({ type: 'SET_PRINT_SMALL_LABEL', payload: print });
+  
+  const setPrintSmallLabel = useCallback((enabled: boolean) => {
+    dispatch({ type: 'SET_PRINT_SMALL_LABEL', payload: enabled });
   }, []);
-
-  const setClearAfterPrint = useCallback((clear: boolean) => {
-    dispatch({ type: 'SET_CLEAR_AFTER_PRINT', payload: clear });
+  
+  const setClearAfterPrint = useCallback((enabled: boolean) => {
+    dispatch({ type: 'SET_CLEAR_AFTER_PRINT', payload: enabled });
   }, []);
-
+  
   const setLabelPreviews = useCallback((previews: LabelPreviewData | null) => {
     dispatch({ type: 'SET_LABEL_PREVIEWS', payload: previews });
   }, []);
-
+  
   const setIsGeneratingPreviews = useCallback((generating: boolean) => {
     dispatch({ type: 'SET_IS_GENERATING_PREVIEWS', payload: generating });
   }, []);
-
+  
   const togglePrinterPanel = useCallback(() => {
     dispatch({ type: 'TOGGLE_PRINTER_PANEL' });
   }, []);
-
+  
   const toggleLogsPanel = useCallback(() => {
     dispatch({ type: 'TOGGLE_LOGS_PANEL' });
   }, []);
-
+  
   const setPrintOptionsModal = useCallback((open: boolean) => {
     dispatch({ type: 'SET_PRINT_OPTIONS_MODAL', payload: open });
   }, []);
-
+  
   const setHelpModal = useCallback((open: boolean) => {
     dispatch({ type: 'SET_HELP_MODAL', payload: open });
   }, []);
-
+  
   const setStatusBar = useCallback((text: string, icon: string) => {
     dispatch({ type: 'SET_STATUS_BAR', payload: { text, icon } });
   }, []);
-
+  
   const setLogsBar = useCallback((text: string, icon: string) => {
     dispatch({ type: 'SET_LOGS_BAR', payload: { text, icon } });
   }, []);
-
+  
+  const addLog = useCallback((message: string) => {
+    dispatch({ type: 'ADD_LOG', payload: message });
+  }, []);
+  
+  const clearLogs = useCallback(() => {
+    dispatch({ type: 'CLEAR_LOGS' });
+  }, []);
+  
   const setLoading = useCallback((loading: boolean) => {
     dispatch({ type: 'SET_LOADING', payload: loading });
   }, []);
-
+  
   const setError = useCallback((error: string | null) => {
     dispatch({ type: 'SET_ERROR', payload: error });
   }, []);
-
-  const contextValue: AppContextType = {
+  
+  const value = {
     state,
     dispatch,
     setPrinters,
@@ -293,15 +314,21 @@ export function AppProvider({ children }: AppProviderProps): React.ReactElement 
     setHelpModal,
     setStatusBar,
     setLogsBar,
+    addLog,
+    clearLogs,
     setLoading,
     setError,
   };
-
-  return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
+  
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+    </AppContext.Provider>
+  );
 }
 
-// Hook to use the context
-export function useApp(): AppContextType {
+// Custom hook to use context
+export function useApp() {
   const context = useContext(AppContext);
   if (context === undefined) {
     throw new Error('useApp must be used within an AppProvider');
