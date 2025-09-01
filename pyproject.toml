@@ -1,14 +1,41 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "label_bro"
 version = "0.1.0"
-description = "A description of your CLI tool"
+description = "Flask web application for Brother QL-800 Label Printers with React frontend"
 readme = "README.md"
-authors = [{ name="Your Name", email="you@example.com" }]
-requires-python = ">=3.7"
+authors = [{ name="Label Bro Team", email="team@labelbro.com" }]
+requires-python = ">=3.11"
+dependencies = [
+    "brother_ql>=0.9.4",
+    "Flask>=3.1.0",
+    "Pillow>=10.0.0",
+    "pycairo>=1.20.0",
+    "pyusb>=1.2.0",
+    "zeroconf>=0.140.0",
+]
 
 [project.optional-dependencies]
-dev = ["tox", "pytest"]
+dev = [
+    "pytest>=7.0.0",
+    "tox>=4.0.0",
+]
+test = [
+    "pytest>=7.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["label_bro*"]
+
+[tool.setuptools.package-data]
+label_bro = ["templates/*", "static/**/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["label_bro/tests", "tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

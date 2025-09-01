@@ -8,23 +8,23 @@ import {
 } from '../types';
 import { TypeValidator, ValidationError, ValidationReporter } from '../validation';
 
-// API endpoints - we'll use relative URLs for same-origin requests
-const API_BASE = '/api';
-const PREVIEW_ENDPOINT = `${API_BASE}/preview`;
+// API endpoints - match Flask backend routes
+const API_BASE = 'http://localhost:5100';
+const PREVIEW_ENDPOINT = `${API_BASE}/previewLabels`;
 const PRINTERS_ENDPOINT = `${API_BASE}/printers`;
-const PRINT_ENDPOINT = `${API_BASE}/print`;
-const DISCOVERY_ENDPOINT = `${API_BASE}/discover`;
-const TEST_ENDPOINT = `${API_BASE}/test-connection`;
+const PRINT_ENDPOINT = `${API_BASE}/printLabels`;
+const DISCOVERY_ENDPOINT = `${API_BASE}/printers/discover`;
+const TEST_ENDPOINT = `${API_BASE}/printers/test`;
 
 export class LabelBroAPI {
   // Fetch label previews from the backend
-  static async fetchLabelPreviews(text: string): Promise<LabelPreviewData> {
+  static async fetchLabelPreviews(labelData: any): Promise<LabelPreviewData> {
     const response = await fetch(PREVIEW_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ text })
+      body: JSON.stringify(labelData)
     });
 
     const data = await response.json();
@@ -76,7 +76,7 @@ export class LabelBroAPI {
           
           // For now, return the raw data since validation can't work
           console.warn('⚠️ Typia validation disabled - returning unvalidated data');
-          return rawData.printers || {};
+          return rawData.printers || rawData || {};
         }
         ValidationReporter.reportError(error as ValidationError);
         throw error;

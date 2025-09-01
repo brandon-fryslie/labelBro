@@ -29,7 +29,17 @@ export function useLabels() {
       setIsGeneratingPreviews(true);
       setError(null);
       addLog('Generating label previews...');
-      const previews = await LabelBroAPI.fetchLabelPreviews(labelText);
+      
+      // Format data correctly for Flask backend
+      const labelData = {
+        data: {
+          text: labelText,
+          shouldPrintFullLabel: state.printFullLabel,
+          shouldPrintSmallLabel: state.printSmallLabel
+        }
+      };
+      
+      const previews = await LabelBroAPI.fetchLabelPreviews(labelData);
       setLabelPreviews(previews);
       addLog('Label previews generated successfully');
     } catch (error) {
@@ -39,7 +49,7 @@ export function useLabels() {
     } finally {
       setIsGeneratingPreviews(false);
     }
-  }, [state.labelText, setLabelPreviews, setIsGeneratingPreviews, setError, addLog]);
+  }, [state.labelText, state.printFullLabel, state.printSmallLabel, setLabelPreviews, setIsGeneratingPreviews, setError, addLog]);
 
   // Print labels
   const printLabels = useCallback(async (printerId?: string) => {

@@ -1,4 +1,11 @@
 // Jest test setup file
+import { TextEncoder, TextDecoder } from 'util';
+import '@testing-library/jest-dom';
+
+// Add TextEncoder and TextDecoder before importing jsdom
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+
 import { JSDOM } from 'jsdom';
 
 // Setup DOM environment for Node.js tests
