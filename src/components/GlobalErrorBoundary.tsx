@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { errorTracking } from '../utils/error-tracking';
 
 interface Props {
@@ -48,11 +48,9 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   private handleRetry = (): void => {
-    // Clear error state to retry rendering
+    // Clear error state to retry rendering - omit optional properties instead of setting to undefined
     this.setState({
-      hasError: false,
-      error: undefined,
-      errorInfo: undefined
+      hasError: false
     });
 
     // Log retry attempt

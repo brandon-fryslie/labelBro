@@ -1,18 +1,47 @@
 {
   "compilerOptions": {
+    // Strict Type Checking
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
-    "skipLibCheck": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    
+    // Additional Strict Checks
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    
+    // Module Resolution
     "moduleResolution": "bundler",
     "target": "ES2022",
     "module": "ESNext",
     "isolatedModules": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    
+    // React JSX
     "jsx": "react-jsx",
     "jsxImportSource": "react",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    
+    // Libraries
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    
+    // Code Quality
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    
+    // Developer Experience
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo"
   },
   "include": [
     "src/**/*.ts",
@@ -21,6 +50,7 @@
   ],
   "exclude": [
     "node_modules",
-    "venv"
+    "venv",
+    ".tsbuildinfo"
   ]
 }

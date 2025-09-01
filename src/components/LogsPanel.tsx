@@ -1,17 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useApp } from '../context/AppContext';
+import { LogEntry } from '../types';
 
 interface LogsPanelProps {
-  logs?: string[];
+  logs: LogEntry[];
 }
 
-export function LogsPanel({ logs: propLogs }: LogsPanelProps): React.ReactElement {
-  const { state } = useApp();
+export function LogsPanel({ logs }: LogsPanelProps): React.ReactElement {
   const [isExpanded, setIsExpanded] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-  
-  // Use prop logs or state logs
-  const logs = propLogs || state.logs || [];
   
   // Get latest logs for collapsed view (showing most recent 1-2)
   const latestLogs = logs.slice(0, 2);
@@ -30,6 +26,9 @@ export function LogsPanel({ logs: propLogs }: LogsPanelProps): React.ReactElemen
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }
+    
+    // Explicitly return undefined for the else case
+    return undefined;
   }, [isExpanded]);
   
   const toggleExpanded = () => {
@@ -39,83 +38,113 @@ export function LogsPanel({ logs: propLogs }: LogsPanelProps): React.ReactElemen
   const handleClose = () => {
     setIsExpanded(false);
   };
-  
-  return (
-    <div 
-      ref={panelRef}
-      className={`fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-lg transition-all duration-300 ease-in-out z-40 ${
-        isExpanded ? 'h-1/2' : 'h-12'
-      }`}
+
+  // Format timestamp
+  const formatTime = (timestamp: Date) => {
+    return timestamp.toLocaleTimeString('en-US', { 
+      hour12: false, 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit' 
+    });
+  };
+
+  // Get log level styling
+  const getLevelStyling = (level: 'info' | 'warning' | 'error' | 'debug') => {
+    switch (level) {
+      case 'error':
+        return 'text-red-600 bg-red-50 border-red-200';
+      case 'warning':
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'debug':
+        return 'text-gray-500 bg-gray-50 border-gray-200';
+      default:
+        return 'text-blue-600 bg-blue-50 border-blue-200';
+    }
+  };
+
+  const renderLogEntry = (log: LogEntry, index: number) => (
+    <div
+      key={`${log.timestamp.getTime()}-${index}`}
+      className={`px-3 py-2 rounded border ${getLevelStyling(log.level)} text-sm`}
     >
-      {/* Collapsed Bar */}
-      {!isExpanded && (
-        <div 
-          className="h-full px-4 py-2 cursor-pointer hover:bg-gray-50 flex items-center justify-between"
-          onClick={toggleExpanded}
-        >
-          <div className="flex-1 overflow-hidden">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-500">Logs:</span>
-              {latestLogs.length > 0 ? (
-                <div className="flex-1 overflow-hidden">
-                  <div className="text-xs text-gray-700 truncate">
-                    {latestLogs[0]}
-                  </div>
-                  {latestLogs.length > 1 && (
-                    <div className="text-xs text-gray-500 truncate">
-                      {latestLogs[1]}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <span className="text-xs text-gray-400">No logs yet</span>
-              )}
-            </div>
-          </div>
-          <button className="text-gray-400 hover:text-gray-600 text-xs">
-            ▲ View All
-          </button>
-        </div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="font-medium capitalize">{log.level}</span>
+        <span className="text-xs opacity-75">{formatTime(log.timestamp)}</span>
+      </div>
+      <div className="font-mono text-xs break-words">
+        {log.message}
+      </div>
+      {log.data && (
+        <details className="mt-2">
+          <summary className="cursor-pointer text-xs font-medium opacity-75">
+            Additional Data
+          </summary>
+          <pre className="mt-1 text-xs opacity-75 whitespace-pre-wrap break-words">
+            {JSON.stringify(log.data, null, 2)}
+          </pre>
+        </details>
       )}
-      
-      {/* Expanded Panel */}
-      {isExpanded && (
-        <div className="h-full flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
-            <h3 className="text-sm font-semibold text-gray-900">System Logs</h3>
+    </div>
+  );
+
+  if (!logs || logs.length === 0) {
+    return (
+      <div className="bg-gray-100 border-t p-3 text-center text-gray-500 text-sm">
+        No logs available
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={panelRef}
+      className={`bg-white border-t transition-all duration-300 ${
+        isExpanded ? 'max-h-80' : 'max-h-20'
+      } overflow-hidden`}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between p-3 border-b bg-gray-50">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">
+            System Logs ({logs.length})
+          </span>
+          {!isExpanded && logs.length > 0 && (
+            <span className="text-xs text-gray-500">
+              • {logs[0] && formatTime(logs[0].timestamp)}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          {isExpanded && (
             <button
               onClick={handleClose}
-              className="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
-              aria-label="Close logs"
+              className="text-gray-400 hover:text-gray-600 p-1 rounded"
+              title="Close"
             >
               ✕
             </button>
-          </div>
-          
-          {/* Scrollable Log Content */}
-          <div className="flex-1 overflow-y-auto p-4 bg-gray-900">
-            {logs.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-400 text-sm">No logs to display</p>
-                <p className="text-gray-500 text-xs mt-1">System logs will appear here</p>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {logs.map((log, index) => (
-                  <div 
-                    key={index}
-                    className="font-mono text-xs leading-relaxed"
-                  >
-                    <span className="text-gray-500">[{new Date().toLocaleTimeString()}]</span>
-                    <span className="text-green-400 ml-2">{log}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          )}
+          <button
+            onClick={toggleExpanded}
+            className="text-gray-400 hover:text-gray-600 p-1 rounded"
+            title={isExpanded ? "Collapse" : "Expand"}
+          >
+            {isExpanded ? '▼' : '▲'}
+          </button>
         </div>
-      )}
+      </div>
+
+      {/* Logs Content */}
+      <div className="overflow-y-auto max-h-60">
+        <div className="p-3 space-y-2">
+          {isExpanded ? (
+            logs.map((log, index) => renderLogEntry(log, index))
+          ) : (
+            latestLogs.map((log, index) => renderLogEntry(log, index))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
