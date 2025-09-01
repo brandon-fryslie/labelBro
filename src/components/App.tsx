@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { AppProvider, useApp } from '../context/AppContext';
 import { StatusBar } from './StatusBar';
-import { PrinterPanel } from './PrinterPanel';
+import { LazyPrinterPanel } from './LazyPrinterPanel';
 import { LogsPanel } from './LogsPanel';
 import { LabelCreator } from './LabelCreator';
-import { LabelPreview } from './LabelPreview';
+import { LazyLabelPreview } from './LazyLabelPreview';
 import { ErrorDisplay } from './ErrorDisplay';
 import { HistoryPanel } from './HistoryPanel';
 import { HelpModal } from './HelpModal';
 import { ActionToolbar } from './ActionToolbar';
+import { PerformanceDebugPanel } from './PerformanceDebugPanel';
 
 function AppContent(): React.ReactElement {
   const { state, setHelpModal } = useApp();
@@ -40,7 +41,7 @@ function AppContent(): React.ReactElement {
       {/* Collapsible Top Bar - Printer Connectivity */}
       <div className="top-bar-section">
         <StatusBar />
-        <PrinterPanel />
+        <LazyPrinterPanel />
       </div>
       
       {/* Center Content - Text Input and Live Preview */}
@@ -50,7 +51,7 @@ function AppContent(): React.ReactElement {
         </div>
         
         <div className="label-preview-section">
-          <LabelPreview />
+          <LazyLabelPreview />
         </div>
       </div>
       
@@ -68,6 +69,9 @@ function AppContent(): React.ReactElement {
       
       {/* Collapsible Bottom Log Panel - Fixed at bottom */}
       <LogsPanel />
+      
+      {/* Performance Debug Panel - Development only */}
+      <PerformanceDebugPanel />
     </div>
   );
 }

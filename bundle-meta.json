@@ -1,0 +1,779 @@
+{
+  "inputs": {
+    "node_modules/scheduler/cjs/scheduler.production.js": {
+      "bytes": 10181,
+      "imports": [],
+      "format": "cjs"
+    },
+    "node_modules/scheduler/index.js": {
+      "bytes": 194,
+      "imports": [
+        {
+          "path": "node_modules/scheduler/cjs/scheduler.production.js",
+          "kind": "require-call",
+          "original": "./cjs/scheduler.production.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/react/cjs/react.production.js": {
+      "bytes": 17075,
+      "imports": [],
+      "format": "cjs"
+    },
+    "node_modules/react/index.js": {
+      "bytes": 186,
+      "imports": [
+        {
+          "path": "node_modules/react/cjs/react.production.js",
+          "kind": "require-call",
+          "original": "./cjs/react.production.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/react-dom/cjs/react-dom.production.js": {
+      "bytes": 6655,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "require-call",
+          "original": "react"
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/react-dom/index.js": {
+      "bytes": 1359,
+      "imports": [
+        {
+          "path": "node_modules/react-dom/cjs/react-dom.production.js",
+          "kind": "require-call",
+          "original": "./cjs/react-dom.production.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/react-dom/cjs/react-dom-client.production.js": {
+      "bytes": 515019,
+      "imports": [
+        {
+          "path": "node_modules/scheduler/index.js",
+          "kind": "require-call",
+          "original": "scheduler"
+        },
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "require-call",
+          "original": "react"
+        },
+        {
+          "path": "node_modules/react-dom/index.js",
+          "kind": "require-call",
+          "original": "react-dom"
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/react-dom/client.js": {
+      "bytes": 1373,
+      "imports": [
+        {
+          "path": "node_modules/react-dom/cjs/react-dom-client.production.js",
+          "kind": "require-call",
+          "original": "./cjs/react-dom-client.production.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/react/cjs/react-jsx-runtime.production.js": {
+      "bytes": 976,
+      "imports": [],
+      "format": "cjs"
+    },
+    "node_modules/react/jsx-runtime.js": {
+      "bytes": 210,
+      "imports": [
+        {
+          "path": "node_modules/react/cjs/react-jsx-runtime.production.js",
+          "kind": "require-call",
+          "original": "./cjs/react-jsx-runtime.production.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    "src/context/AppContext.tsx": {
+      "bytes": 10830,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/StatusBar.tsx": {
+      "bytes": 615,
+      "imports": [
+        {
+          "path": "react",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "src/context/AppContext.tsx",
+          "kind": "import-statement",
+          "original": "../context/AppContext"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/validation/index.ts": {
+      "bytes": 9942,
+      "imports": [
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "src/api/index.ts": {
+      "bytes": 8652,
+      "imports": [
+        {
+          "path": "../types",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "src/validation/index.ts",
+          "kind": "import-statement",
+          "original": "../validation"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/hooks/usePrinters.ts": {
+      "bytes": 5525,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/context/AppContext.tsx",
+          "kind": "import-statement",
+          "original": "../context/AppContext"
+        },
+        {
+          "path": "src/api/index.ts",
+          "kind": "import-statement",
+          "original": "../api"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/hooks/useLocalStorage.ts": {
+      "bytes": 2620,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/PrinterPanel.tsx": {
+      "bytes": 5885,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/context/AppContext.tsx",
+          "kind": "import-statement",
+          "original": "../context/AppContext"
+        },
+        {
+          "path": "src/hooks/usePrinters.ts",
+          "kind": "import-statement",
+          "original": "../hooks/usePrinters"
+        },
+        {
+          "path": "src/hooks/useLocalStorage.ts",
+          "kind": "import-statement",
+          "original": "../hooks/useLocalStorage"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/LazyPrinterPanel.tsx": {
+      "bytes": 2232,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/components/PrinterPanel.tsx",
+          "kind": "dynamic-import",
+          "original": "./PrinterPanel"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/LogsPanel.tsx": {
+      "bytes": 4130,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/context/AppContext.tsx",
+          "kind": "import-statement",
+          "original": "../context/AppContext"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/hooks/useLabels.ts": {
+      "bytes": 4243,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/context/AppContext.tsx",
+          "kind": "import-statement",
+          "original": "../context/AppContext"
+        },
+        {
+          "path": "src/api/index.ts",
+          "kind": "import-statement",
+          "original": "../api"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/LabelCreator.tsx": {
+      "bytes": 3602,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/hooks/useLabels.ts",
+          "kind": "import-statement",
+          "original": "../hooks/useLabels"
+        },
+        {
+          "path": "src/hooks/useLocalStorage.ts",
+          "kind": "import-statement",
+          "original": "../hooks/useLocalStorage"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/LabelPreview.tsx": {
+      "bytes": 2508,
+      "imports": [
+        {
+          "path": "react",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "src/hooks/useLabels.ts",
+          "kind": "import-statement",
+          "original": "../hooks/useLabels"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/LazyLabelPreview.tsx": {
+      "bytes": 1901,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/components/LabelPreview.tsx",
+          "kind": "dynamic-import",
+          "original": "./LabelPreview"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/ErrorDisplay.tsx": {
+      "bytes": 630,
+      "imports": [
+        {
+          "path": "react",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "src/context/AppContext.tsx",
+          "kind": "import-statement",
+          "original": "../context/AppContext"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/HistoryPanel.tsx": {
+      "bytes": 4784,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/context/AppContext.tsx",
+          "kind": "import-statement",
+          "original": "../context/AppContext"
+        },
+        {
+          "path": "src/hooks/useLabels.ts",
+          "kind": "import-statement",
+          "original": "../hooks/useLabels"
+        },
+        {
+          "path": "src/hooks/useLocalStorage.ts",
+          "kind": "import-statement",
+          "original": "../hooks/useLocalStorage"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/HelpModal.tsx": {
+      "bytes": 3830,
+      "imports": [
+        {
+          "path": "react",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/ActionToolbar.tsx": {
+      "bytes": 2474,
+      "imports": [
+        {
+          "path": "react",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "src/context/AppContext.tsx",
+          "kind": "import-statement",
+          "original": "../context/AppContext"
+        },
+        {
+          "path": "src/hooks/useLabels.ts",
+          "kind": "import-statement",
+          "original": "../hooks/useLabels"
+        },
+        {
+          "path": "src/hooks/usePrinters.ts",
+          "kind": "import-statement",
+          "original": "../hooks/usePrinters"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/web-vitals/dist/web-vitals.js": {
+      "bytes": 5867,
+      "imports": [
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "src/utils/performance-monitor.ts": {
+      "bytes": 7710,
+      "imports": [
+        {
+          "path": "node_modules/web-vitals/dist/web-vitals.js",
+          "kind": "import-statement",
+          "original": "web-vitals"
+        },
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/PerformanceDebugPanel.tsx": {
+      "bytes": 3861,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/utils/performance-monitor.ts",
+          "kind": "import-statement",
+          "original": "../utils/performance-monitor"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/components/App.tsx": {
+      "bytes": 2352,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/context/AppContext.tsx",
+          "kind": "import-statement",
+          "original": "../context/AppContext"
+        },
+        {
+          "path": "src/components/StatusBar.tsx",
+          "kind": "import-statement",
+          "original": "./StatusBar"
+        },
+        {
+          "path": "src/components/LazyPrinterPanel.tsx",
+          "kind": "import-statement",
+          "original": "./LazyPrinterPanel"
+        },
+        {
+          "path": "src/components/LogsPanel.tsx",
+          "kind": "import-statement",
+          "original": "./LogsPanel"
+        },
+        {
+          "path": "src/components/LabelCreator.tsx",
+          "kind": "import-statement",
+          "original": "./LabelCreator"
+        },
+        {
+          "path": "src/components/LazyLabelPreview.tsx",
+          "kind": "import-statement",
+          "original": "./LazyLabelPreview"
+        },
+        {
+          "path": "src/components/ErrorDisplay.tsx",
+          "kind": "import-statement",
+          "original": "./ErrorDisplay"
+        },
+        {
+          "path": "src/components/HistoryPanel.tsx",
+          "kind": "import-statement",
+          "original": "./HistoryPanel"
+        },
+        {
+          "path": "src/components/HelpModal.tsx",
+          "kind": "import-statement",
+          "original": "./HelpModal"
+        },
+        {
+          "path": "src/components/ActionToolbar.tsx",
+          "kind": "import-statement",
+          "original": "./ActionToolbar"
+        },
+        {
+          "path": "src/components/PerformanceDebugPanel.tsx",
+          "kind": "import-statement",
+          "original": "./PerformanceDebugPanel"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/utils/error-reporter.ts": {
+      "bytes": 2513,
+      "imports": [],
+      "format": "esm"
+    },
+    "src/styles/lazy-components.css": {
+      "bytes": 1554,
+      "imports": []
+    },
+    "src/styles/globals.css": {
+      "bytes": 11623,
+      "imports": [
+        {
+          "path": "src/styles/lazy-components.css",
+          "kind": "import-rule",
+          "original": "./lazy-components.css"
+        }
+      ]
+    },
+    "src/main.tsx": {
+      "bytes": 989,
+      "imports": [
+        {
+          "path": "react",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react-dom/client.js",
+          "kind": "import-statement",
+          "original": "react-dom/client"
+        },
+        {
+          "path": "src/components/App.tsx",
+          "kind": "import-statement",
+          "original": "./components/App"
+        },
+        {
+          "path": "src/utils/error-reporter.ts",
+          "kind": "import-statement",
+          "original": "./utils/error-reporter"
+        },
+        {
+          "path": "src/utils/performance-monitor.ts",
+          "kind": "import-statement",
+          "original": "./utils/performance-monitor"
+        },
+        {
+          "path": "src/styles/globals.css",
+          "kind": "import-statement",
+          "original": "./styles/globals.css"
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    }
+  },
+  "outputs": {
+    "label_bro/static/js/bundle.js.map": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 1035374
+    },
+    "label_bro/static/js/bundle.js": {
+      "imports": [],
+      "exports": [],
+      "entryPoint": "src/main.tsx",
+      "cssBundle": "label_bro/static/js/bundle.css",
+      "inputs": {
+        "node_modules/scheduler/cjs/scheduler.production.js": {
+          "bytesInOutput": 3638
+        },
+        "node_modules/scheduler/index.js": {
+          "bytesInOutput": 51
+        },
+        "node_modules/react/cjs/react.production.js": {
+          "bytesInOutput": 7622
+        },
+        "node_modules/react/index.js": {
+          "bytesInOutput": 51
+        },
+        "node_modules/react-dom/cjs/react-dom.production.js": {
+          "bytesInOutput": 3343
+        },
+        "node_modules/react-dom/index.js": {
+          "bytesInOutput": 253
+        },
+        "node_modules/react-dom/cjs/react-dom-client.production.js": {
+          "bytesInOutput": 169066
+        },
+        "node_modules/react-dom/client.js": {
+          "bytesInOutput": 253
+        },
+        "node_modules/react/cjs/react-jsx-runtime.production.js": {
+          "bytesInOutput": 364
+        },
+        "node_modules/react/jsx-runtime.js": {
+          "bytesInOutput": 50
+        },
+        "src/context/AppContext.tsx": {
+          "bytesInOutput": 4389
+        },
+        "src/validation/index.ts": {
+          "bytesInOutput": 4775
+        },
+        "src/api/index.ts": {
+          "bytesInOutput": 3595
+        },
+        "src/hooks/usePrinters.ts": {
+          "bytesInOutput": 2422
+        },
+        "src/hooks/useLocalStorage.ts": {
+          "bytesInOutput": 610
+        },
+        "src/components/PrinterPanel.tsx": {
+          "bytesInOutput": 2839
+        },
+        "src/hooks/useLabels.ts": {
+          "bytesInOutput": 2046
+        },
+        "src/components/LabelPreview.tsx": {
+          "bytesInOutput": 1433
+        },
+        "src/main.tsx": {
+          "bytesInOutput": 410
+        },
+        "src/components/App.tsx": {
+          "bytesInOutput": 813
+        },
+        "src/components/StatusBar.tsx": {
+          "bytesInOutput": 496
+        },
+        "src/components/LazyPrinterPanel.tsx": {
+          "bytesInOutput": 1526
+        },
+        "src/components/LogsPanel.tsx": {
+          "bytesInOutput": 2463
+        },
+        "src/components/LabelCreator.tsx": {
+          "bytesInOutput": 1691
+        },
+        "src/components/LazyLabelPreview.tsx": {
+          "bytesInOutput": 1210
+        },
+        "src/components/ErrorDisplay.tsx": {
+          "bytesInOutput": 489
+        },
+        "src/components/HistoryPanel.tsx": {
+          "bytesInOutput": 2318
+        },
+        "src/components/HelpModal.tsx": {
+          "bytesInOutput": 3652
+        },
+        "src/components/ActionToolbar.tsx": {
+          "bytesInOutput": 1576
+        },
+        "src/components/PerformanceDebugPanel.tsx": {
+          "bytesInOutput": 531
+        },
+        "node_modules/web-vitals/dist/web-vitals.js": {
+          "bytesInOutput": 5766
+        },
+        "src/utils/performance-monitor.ts": {
+          "bytesInOutput": 2767
+        },
+        "src/utils/error-reporter.ts": {
+          "bytesInOutput": 1193
+        },
+        "src/styles/globals.css": {
+          "bytesInOutput": 0
+        }
+      },
+      "bytes": 236069
+    },
+    "label_bro/static/js/bundle.css.map": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 21279
+    },
+    "label_bro/static/js/bundle.css": {
+      "imports": [],
+      "inputs": {
+        "src/styles/lazy-components.css": {
+          "bytesInOutput": 1094
+        },
+        "src/styles/globals.css": {
+          "bytesInOutput": 9124
+        }
+      },
+      "bytes": 10258
+    }
+  }
+}

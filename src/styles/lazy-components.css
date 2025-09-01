@@ -1,0 +1,87 @@
+/* Lazy loading components styles */
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #333;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner p {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Loading skeleton styles */
+.mode-button.loading {
+  background-color: #f0f0f0;
+  color: #999;
+  cursor: not-allowed;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Error states for lazy components */
+.error-message {
+  text-align: center;
+  padding: 1.5rem;
+  background-color: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 8px;
+  color: #742a2a;
+}
+
+.error-message p {
+  margin-bottom: 1rem;
+}
+
+.retry-button {
+  background-color: #e53e3e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.retry-button:hover {
+  background-color: #c53030;
+}
+
+/* Error boundary styles */
+.previews-container.error,
+.printer-panel.error {
+  border: 2px dashed #fed7d7;
+  background-color: #fff5f5;
+}
+
+/* Loading state for components that haven't loaded yet */
+.lazy-loading {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
