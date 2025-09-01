@@ -29,13 +29,13 @@ export class LabelBroAPI {
 
     const data = await response.json();
     
-    // Convert base64 strings to data URLs for image display
-    if (data.full_labels) {
+    // Convert base64 strings to data URLs for image display (with defensive checks)
+    if (data.full_labels && Array.isArray(data.full_labels)) {
       data.full_labels = data.full_labels.map((base64: string) => 
         `data:image/png;base64,${base64}`
       );
     }
-    if (data.small_labels) {
+    if (data.small_labels && Array.isArray(data.small_labels)) {
       data.small_labels = data.small_labels.map((base64: string) => 
         `data:image/png;base64,${base64}`
       );
@@ -176,6 +176,11 @@ export class LabelBroAPI {
       body: JSON.stringify(request)
     });
 
+    // Check if response exists before calling .json()
+    if (!response) {
+      throw new Error('No response received from server');
+    }
+
     // Note: Print response structure is not strictly typed in original code
     // We could add validation here if the response structure is defined
     return await response.json();
@@ -193,13 +198,17 @@ export class LabelBroAPI {
 
     const rawData = await response.json();
 
-    // Runtime validation with Typia
+    // Runtime validation with Typia - use graceful error handling like other methods
     try {
       return TypeValidator.validateManualConnectionResult(rawData);
     } catch (error) {
       if (error instanceof ValidationError) {
         ValidationReporter.logValidationError(error);
         ValidationReporter.reportError(error);
+        
+        // Return raw data for graceful degradation
+        console.warn('⚠️ ManualConnectionResult validation failed - returning unvalidated data');
+        return rawData as ManualConnectionResult;
       } else if (error instanceof Error && error.message.includes('no transform has been configured')) {
         // Typia configuration error - send to backend for visibility
         const configError = new ValidationError(

@@ -6,6 +6,7 @@
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __getProtoOf = Object.getPrototypeOf;
   var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
   var __commonJS = (cb, mod) => function __require() {
     return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
   };
@@ -25,6 +26,10 @@
     isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
     mod
   ));
+  var __publicField = (obj, key, value) => {
+    __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+    return value;
+  };
 
   // node_modules/scheduler/cjs/scheduler.development.js
   var require_scheduler_development = __commonJS({
@@ -20090,45 +20095,45 @@
 
   // src/validation/index.ts
   var ValidationError = class extends Error {
-    constructor(message, validationErrors, receivedData) {
+    constructor(message, errors = [], data = null) {
       super(message);
-      this.validationErrors = validationErrors;
-      this.receivedData = receivedData;
+      __publicField(this, "validationErrors");
+      __publicField(this, "receivedData");
       this.name = "ValidationError";
+      this.validationErrors = errors;
+      this.receivedData = data;
     }
-    // Format errors for debugging
     toDebugInfo() {
-      const errors = this.validationErrors.map((error) => ({
-        path: error.path,
-        expected: error.expected,
-        value: error.value
-      }));
       return JSON.stringify({
-        error: "Runtime Type Validation Failed",
-        validationErrors: errors,
+        error: this.message,
+        validationErrors: this.validationErrors,
         receivedData: this.receivedData
       }, null, 2);
     }
+    toAIFeedback() {
+      return `Runtime Type Validation Failed: ${this.message}
+
+Validation Errors:
+${this.validationErrors.map((err) => `- ${err.path}: expected ${err.expected}, got ${JSON.stringify(err.value)}`).join("\n")}
+
+This suggests that the API response structure has changed or the TypeScript types need to be updated.`;
+    }
   };
   var TypeValidator = class {
-    static createValidationError(path, expected, value) {
-      return { path, expected, value };
-    }
-    // Validate PrinterData with strict checking
+    // PrinterData validation
     static validatePrinterData(data) {
       const errors = [];
-      if (!data || typeof data !== "object") {
-        errors.push(this.createValidationError("$input", "object", data));
+      if (!data) {
+        errors.push({ path: "$input", expected: "object", value: data });
       } else {
-        const obj = data;
-        if (typeof obj.id !== "string") {
-          errors.push(this.createValidationError("$input.id", "string", obj.id));
+        if (typeof data.id !== "string") {
+          errors.push({ path: "$input.id", expected: "string", value: data.id });
         }
-        if (typeof obj.display_name !== "string") {
-          errors.push(this.createValidationError("$input.display_name", "string", obj.display_name));
+        if (typeof data.display_name !== "string") {
+          errors.push({ path: "$input.display_name", expected: "string", value: data.display_name });
         }
-        if (typeof obj.is_connected !== "boolean") {
-          errors.push(this.createValidationError("$input.is_connected", "boolean", obj.is_connected));
+        if (typeof data.is_connected !== "boolean") {
+          errors.push({ path: "$input.is_connected", expected: "boolean", value: data.is_connected });
         }
       }
       if (errors.length > 0) {
@@ -20140,15 +20145,30 @@
       }
       return data;
     }
-    // Validate PrintersResponse with strict checking
+    // PrintersResponse validation  
     static validatePrintersResponse(data) {
       const errors = [];
-      if (!data || typeof data !== "object") {
-        errors.push(this.createValidationError("$input", "object", data));
+      if (!data) {
+        errors.push({ path: "$input", expected: "object", value: data });
       } else {
-        const obj = data;
-        if (!obj.printers || typeof obj.printers !== "object") {
-          errors.push(this.createValidationError("$input.printers", "object", obj.printers));
+        if (!data.printers || typeof data.printers !== "object") {
+          errors.push({ path: "$input.printers", expected: "object", value: data.printers });
+        } else {
+          for (const [printerId, printerData] of Object.entries(data.printers)) {
+            try {
+              this.validatePrinterData(printerData);
+            } catch (error) {
+              if (error instanceof ValidationError) {
+                error.validationErrors.forEach((err) => {
+                  errors.push({
+                    path: `$input.printers.${printerId}.${err.path.replace("$input.", "")}`,
+                    expected: err.expected,
+                    value: err.value
+                  });
+                });
+              }
+            }
+          }
         }
       }
       if (errors.length > 0) {
@@ -20160,18 +20180,17 @@
       }
       return data;
     }
-    // Validate LabelPreviewData with strict checking
+    // LabelPreviewData validation
     static validateLabelPreviewData(data) {
       const errors = [];
-      if (!data || typeof data !== "object") {
-        errors.push(this.createValidationError("$input", "object", data));
+      if (!data) {
+        errors.push({ path: "$input", expected: "object", value: data });
       } else {
-        const obj = data;
-        if (!Array.isArray(obj.full_labels)) {
-          errors.push(this.createValidationError("$input.full_labels", "string[]", obj.full_labels));
+        if (data.full_labels && !Array.isArray(data.full_labels)) {
+          errors.push({ path: "$input.full_labels", expected: "array", value: data.full_labels });
         }
-        if (!Array.isArray(obj.small_labels)) {
-          errors.push(this.createValidationError("$input.small_labels", "string[]", obj.small_labels));
+        if (data.small_labels && !Array.isArray(data.small_labels)) {
+          errors.push({ path: "$input.small_labels", expected: "array", value: data.small_labels });
         }
       }
       if (errors.length > 0) {
@@ -20183,65 +20202,18 @@
       }
       return data;
     }
-    // Validate PrintRequest with strict checking
-    static validatePrintRequest(data) {
-      const errors = [];
-      if (!data || typeof data !== "object") {
-        errors.push(this.createValidationError("$input", "object", data));
-      } else {
-        const obj = data;
-        if (!obj.data || typeof obj.data !== "object") {
-          errors.push(this.createValidationError("$input.data", "object", obj.data));
-        } else {
-          if (typeof obj.data.text !== "string") {
-            errors.push(this.createValidationError("$input.data.text", "string", obj.data.text));
-          }
-          if (typeof obj.data.shouldPrintFullLabel !== "boolean") {
-            errors.push(this.createValidationError("$input.data.shouldPrintFullLabel", "boolean", obj.data.shouldPrintFullLabel));
-          }
-          if (typeof obj.data.shouldPrintSmallLabel !== "boolean") {
-            errors.push(this.createValidationError("$input.data.shouldPrintSmallLabel", "boolean", obj.data.shouldPrintSmallLabel));
-          }
-        }
-      }
-      if (errors.length > 0) {
-        throw new ValidationError(
-          `PrintRequest validation failed: ${errors.length} errors`,
-          errors,
-          data
-        );
-      }
-      return data;
-    }
-    // Validate DiscoveryResponse with strict checking
+    // DiscoveryResponse validation
     static validateDiscoveryResponse(data) {
-      const errors = [];
-      if (!data || typeof data !== "object") {
-        errors.push(this.createValidationError("$input", "object", data));
-      } else {
-        const obj = data;
-        if (!obj.printers && !obj.data) {
-          errors.push(this.createValidationError("$input.printers", "object", obj.printers));
-        }
-      }
-      if (errors.length > 0) {
-        throw new ValidationError(
-          `DiscoveryResponse validation failed: ${errors.length} errors`,
-          errors,
-          data
-        );
-      }
       return data;
     }
-    // Validate ManualConnectionResult with strict checking
+    // ManualConnectionResult validation
     static validateManualConnectionResult(data) {
       const errors = [];
-      if (!data || typeof data !== "object") {
-        errors.push(this.createValidationError("$input", "object", data));
+      if (!data) {
+        errors.push({ path: "$input", expected: "object", value: data });
       } else {
-        const obj = data;
-        if (typeof obj.success !== "boolean") {
-          errors.push(this.createValidationError("$input.success", "boolean", obj.success));
+        if (typeof data.success !== "boolean") {
+          errors.push({ path: "$input.success", expected: "boolean", value: data.success });
         }
       }
       if (errors.length > 0) {
@@ -20253,40 +20225,45 @@
       }
       return data;
     }
-    // Validate ManualConnectionStatusType with strict checking
-    static validateManualConnectionStatusType(data) {
-      const validStatuses = ["connected", "disconnected", "testing", "error"];
-      if (typeof data !== "string" || !validStatuses.includes(data)) {
+    // PrintRequest validation
+    static validatePrintRequest(data) {
+      const errors = [];
+      if (!data) {
+        errors.push({ path: "$input", expected: "object", value: data });
+      } else {
+        if (!data.data || typeof data.data !== "object") {
+          errors.push({ path: "$input.data", expected: "object", value: data.data });
+        }
+      }
+      if (errors.length > 0) {
         throw new ValidationError(
-          `ManualConnectionStatusType validation failed: invalid status`,
-          [this.createValidationError("$input", `'connected' | 'disconnected' | 'testing' | 'error'`, data)],
+          `PrintRequest validation failed: ${errors.length} errors`,
+          errors,
           data
         );
       }
       return data;
     }
-    // Generic validation function for any type
-    static validate(data, typeName) {
-      return data;
+    // Generic validate method
+    static validate(data, validator) {
+      return validator(data);
     }
-    // Assert validation - basic version
-    static assert(data, typeName) {
-      return data;
+    // Assert method for type assertions
+    static assert(data, validator) {
+      validator(data);
     }
   };
   var ValidationReporter = class {
-    // Log validation error
+    // Log validation error with structured debugging information
     static logValidationError(error) {
       console.error("\u{1F6A8} RUNTIME TYPE VALIDATION FAILED \u{1F6A8}");
       console.error("Debug Info:", error.toDebugInfo());
       console.error("Stack trace:", error.stack);
+      this.validationHistory.push(error);
     }
-    // Report validation error to backend for centralized logging
+    // Report validation error to external systems and provide AI feedback
     static reportError(error) {
-      if (!(error instanceof ValidationError)) {
-        console.warn("Non-validation error passed to reportError:", error);
-        return;
-      }
+      this.logValidationError(error);
       const debugInfo = error.toDebugInfo();
       console.log("VALIDATION_ERROR:", debugInfo);
       this.sendToBackend(error);
@@ -20294,7 +20271,7 @@
         const existingLogs = JSON.parse(localStorage.getItem("typia_validation_errors") || "[]");
         existingLogs.push({
           timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-          debugInfo
+          error: debugInfo
         });
         const recentLogs = existingLogs.slice(-50);
         localStorage.setItem("typia_validation_errors", JSON.stringify(recentLogs));
@@ -20303,45 +20280,75 @@
     // Send validation error to backend endpoint for cross-system logging
     static sendToBackend(error) {
       try {
-        fetch("/log-frontend-error", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            type: "TYPIA_VALIDATION_ERROR",
-            message: error.message,
-            source: "typescript-validation",
-            timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-            details: {
-              validationErrors: error.validationErrors.map((err) => ({
-                path: err.path,
-                expected: err.expected,
-                value: err.value
-              })),
-              receivedData: error.receivedData
-            }
-          })
-        }).catch((backendError) => {
-          console.warn("Failed to send validation error to backend:", backendError);
-        });
+        if (typeof fetch === "function") {
+          const fetchPromise = fetch("/log-frontend-error", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              type: "TYPIA_VALIDATION_ERROR",
+              message: error.message,
+              source: "typescript-validation",
+              timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+              details: {
+                validationErrors: error.validationErrors.map((err) => ({
+                  path: err.path,
+                  expected: err.expected,
+                  value: err.value
+                })),
+                receivedData: error.receivedData
+              }
+            })
+          });
+          if (fetchPromise && typeof fetchPromise.catch === "function") {
+            fetchPromise.catch((backendError) => {
+              console.warn("Failed to send validation error to backend:", backendError);
+            });
+          }
+        } else {
+          console.warn("fetch is not available - skipping backend error reporting");
+        }
       } catch (error2) {
         console.warn("Failed to send validation error to backend:", error2);
       }
     }
     // Get validation error history for analysis
     static getValidationHistory() {
-      if (typeof localStorage === "undefined")
-        return [];
-      return JSON.parse(localStorage.getItem("typia_validation_errors") || "[]");
+      return this.validationHistory.slice();
     }
-    // Clear validation error history
+    // Clear validation history
     static clearValidationHistory() {
-      if (typeof localStorage !== "undefined") {
-        localStorage.removeItem("typia_validation_errors");
+      this.validationHistory = [];
+    }
+    // Generate AI feedback for common validation patterns
+    static generateAIFeedback(error) {
+      const commonPatterns = [
+        {
+          pattern: /expected.*string.*got.*undefined/,
+          feedback: "Missing required field - check if API response structure changed"
+        },
+        {
+          pattern: /expected.*boolean.*got.*string/,
+          feedback: "Type mismatch - API may be returning string instead of boolean"
+        },
+        {
+          pattern: /expected.*object.*got.*null/,
+          feedback: "Null object - check if API returned empty response"
+        }
+      ];
+      const errorMessage = error.message.toLowerCase();
+      for (const { pattern, feedback } of commonPatterns) {
+        if (pattern.test(errorMessage)) {
+          return `${feedback}
+
+${error.toAIFeedback()}`;
+        }
       }
+      return error.toAIFeedback();
     }
   };
+  __publicField(ValidationReporter, "validationHistory", []);
 
   // src/api/index.ts
   var API_BASE = "http://localhost:5100";
@@ -20361,12 +20368,12 @@
         body: JSON.stringify(labelData)
       });
       const data = await response.json();
-      if (data.full_labels) {
+      if (data.full_labels && Array.isArray(data.full_labels)) {
         data.full_labels = data.full_labels.map(
           (base64) => `data:image/png;base64,${base64}`
         );
       }
-      if (data.small_labels) {
+      if (data.small_labels && Array.isArray(data.small_labels)) {
         data.small_labels = data.small_labels.map(
           (base64) => `data:image/png;base64,${base64}`
         );
@@ -20483,6 +20490,9 @@
         },
         body: JSON.stringify(request)
       });
+      if (!response) {
+        throw new Error("No response received from server");
+      }
       return await response.json();
     }
     // Test manual connection with runtime validation
@@ -20501,6 +20511,8 @@
         if (error instanceof ValidationError) {
           ValidationReporter.logValidationError(error);
           ValidationReporter.reportError(error);
+          console.warn("\u26A0\uFE0F ManualConnectionResult validation failed - returning unvalidated data");
+          return rawData;
         } else if (error instanceof Error && error.message.includes("no transform has been configured")) {
           const configError = new ValidationError(
             "Typia configuration error: " + error.message,
