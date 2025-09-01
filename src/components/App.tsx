@@ -7,8 +7,8 @@ import { LogsPanel } from './LogsPanel';
 import { LabelCreator } from './LabelCreator';
 import { LazyLabelPreview } from './LazyLabelPreview';
 import { ErrorDisplay } from './ErrorDisplay';
-import { HistoryPanel } from './HistoryPanel';
-import { HelpModal } from './HelpModal';
+import { LazyHistoryPanel } from './LazyHistoryPanel';
+import { LazyHelpModal } from './LazyHelpModal';
 import { ActionToolbar } from './ActionToolbar';
 import { PerformanceDebugPanel } from './PerformanceDebugPanel';
 
@@ -57,13 +57,13 @@ function AppContent(): React.ReactElement {
       </div>
       
       {/* History Panel - Slides in from right */}
-      <HistoryPanel 
+      <LazyHistoryPanel 
         isVisible={isHistoryVisible}
         onToggle={handleHistoryToggle}
       />
       
       {/* Help Modal */}
-      <HelpModal 
+      <LazyHelpModal 
         isOpen={state.isHelpModalOpen} 
         onClose={handleHelpClose} 
       />
