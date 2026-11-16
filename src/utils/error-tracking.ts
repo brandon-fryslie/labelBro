@@ -27,7 +27,7 @@ interface ErrorTrackingConfig {
 
 class ErrorTrackingService {
   private isInitialized = false;
-  private isDevelopment = process.env.NODE_ENV === 'development';
+  private isDevelopment = import.meta.env.DEV;
 
   public initialize(config?: Partial<ErrorTrackingConfig>): void {
     // Skip Sentry initialization in development unless explicitly configured
@@ -44,8 +44,8 @@ class ErrorTrackingService {
     };
 
     // Ensure DSN and release are defined before passing to init
-    const dsn = defaultConfig.dsn || process.env.REACT_APP_SENTRY_DSN;
-    const release = defaultConfig.release || process.env.REACT_APP_VERSION;
+    const dsn = defaultConfig.dsn || import.meta.env.VITE_SENTRY_DSN;
+    const release = defaultConfig.release || import.meta.env.VITE_APP_VERSION;
 
     // Skip initialization if no DSN is available
     if (!dsn) {
@@ -163,7 +163,7 @@ class ErrorTrackingService {
         });
         scope.setContext('application', {
           framework: 'React',
-          version: process.env.REACT_APP_VERSION || 'unknown',
+          version: import.meta.env.VITE_APP_VERSION || 'unknown',
         });
       });
 

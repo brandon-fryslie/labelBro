@@ -7,6 +7,7 @@ import type {
   ManualConnectionResult,
   PrintRequest
 } from '../types';
+import { LOG_FRONTEND_ERROR_ENDPOINT } from '../api/endpoints';
 
 // Custom ValidationError class with comprehensive debugging support
 export class ValidationError extends Error {
@@ -191,17 +192,6 @@ export class TypeValidator {
       throw new ValidationError('Expected object, got ' + typeof data, [], data);
     }
 
-    // Check for error field (either string or undefined)
-    if (data.error !== undefined && typeof data.error !== "string") {
-      errors.push({ path: "$input.error", expected: "string or undefined", value: data.error });
-    }
-
-    // If error field exists and is a string, that's a valid error response
-    if (typeof data.error === "string") {
-      return data as LabelPreviewData;
-    }
-
-    // Otherwise, validate as a successful preview response
     if (!Array.isArray(data.full_labels)) {
       errors.push({ path: "$input.full_labels", expected: "array", value: data.full_labels });
     } else {
@@ -429,7 +419,7 @@ export class ValidationReporter {
     try {
       // Ensure fetch exists and returns a promise
       if (typeof fetch === 'function') {
-        const fetchPromise = fetch('/log-frontend-error', {
+        const fetchPromise = fetch(LOG_FRONTEND_ERROR_ENDPOINT, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

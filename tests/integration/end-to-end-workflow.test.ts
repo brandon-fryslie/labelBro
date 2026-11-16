@@ -1,30 +1,26 @@
+import { assert, type MockedFunction } from 'vitest';
 // End-to-end integration tests for complete application workflows
 // Tests the full user journey: Discovery → Connection → Label Creation → Print
 
 import { LabelBroAPI } from '../../src/api';
-import { TypeValidator } from '../../src/validation';
+import { flaskResponse } from '../utils/test-utils';
 import { 
   validDiscoveryResponses,
-  validPrintersResponses,
   printerStatuses,
-  validLabelPreviews,
-  validPrintRequests,
-  createPrinterData,
-  createLabelPreviewData,
   createPrintRequest,
   validBase64Image
 } from '../fixtures';
 
 describe('End-to-End Application Workflow Integration', () => {
-  let mockFetch: jest.MockedFunction<typeof fetch>;
+  let mockFetch: MockedFunction<typeof fetch>;
 
   beforeEach(() => {
-    mockFetch = jest.fn(global.fetch) as jest.MockedFunction<typeof fetch>;
+    mockFetch = vi.fn(global.fetch) as MockedFunction<typeof fetch>;
     global.fetch = mockFetch;
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Complete User Journey: Auto Discovery → Label → Print', () => {
@@ -63,8 +59,8 @@ describe('End-to-End Application Workflow Integration', () => {
       };
 
       const previewResponse = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
-        small_labels: [validBase64Image.replace('data:image/png;base64,', '')]
+        full_labels: [validBase64Image],
+        small_labels: [validBase64Image]
       };
 
       const printResponse = {
@@ -106,13 +102,14 @@ describe('End-to-End Application Workflow Integration', () => {
       
       // Step 1: Discover available printers
       const discoveryResult = await LabelBroAPI.discoverPrinters();
+      assert(discoveryResult, 'expected a discovery result');
       expect(discoveryResult.success).toBe(true);
       expect(discoveryResult.data.printers[selectedPrinterId]).toBeDefined();
 
       // Step 2: Check printer status
       const statusResult = await LabelBroAPI.fetchPrinters();
-      expect(statusResult![selectedPrinterId].is_connected).toBe(true);
-      expect(statusResult![selectedPrinterId].printer_ready).toBe(true);
+      expect(statusResult?.[selectedPrinterId]?.is_connected).toBe(true);
+      expect(statusResult?.[selectedPrinterId]?.printer_ready).toBe(true);
 
       // Step 3: Generate label preview
       const previewResult = await LabelBroAPI.fetchLabelPreviews({ text: labelText });
@@ -137,22 +134,22 @@ describe('End-to-End Application Workflow Integration', () => {
       
       // Verify each API call was made correctly
       expect(mockFetch).toHaveBeenNthCalledWith(1,
-        'http://localhost:5100/printers/discover',
+        '/api/printers/discover',
         expect.objectContaining({ method: 'POST' })
       );
       expect(mockFetch).toHaveBeenNthCalledWith(2,
-        'http://localhost:5100/printers',
+        '/api/printers',
         expect.objectContaining({ method: 'GET' })
       );
       expect(mockFetch).toHaveBeenNthCalledWith(3,
-        'http://localhost:5100/previewLabels',
+        '/api/previewLabels',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ text: labelText })
         })
       );
       expect(mockFetch).toHaveBeenNthCalledWith(4,
-        'http://localhost:5100/printLabels',
+        '/api/printLabels',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify(printRequest)
@@ -176,8 +173,8 @@ describe('End-to-End Application Workflow Integration', () => {
       };
 
       const previewResponse = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
-        small_labels: [validBase64Image.replace('data:image/png;base64,', '')]
+        full_labels: [validBase64Image],
+        small_labels: [validBase64Image]
       };
 
       const printBothResponse = {
@@ -207,6 +204,7 @@ describe('End-to-End Application Workflow Integration', () => {
 
       // Execute workflow
       const discoveryResult = await LabelBroAPI.discoverPrinters();
+      assert(discoveryResult, 'expected a discovery result');
       expect(discoveryResult.success).toBe(true);
 
       const previewResult = await LabelBroAPI.fetchLabelPreviews({ text: labelText });
@@ -256,8 +254,8 @@ describe('End-to-End Application Workflow Integration', () => {
       };
 
       const previewResponse = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
-        small_labels: [validBase64Image.replace('data:image/png;base64,', '')]
+        full_labels: [validBase64Image],
+        small_labels: [validBase64Image]
       };
 
       const printResponse = {
@@ -299,7 +297,7 @@ describe('End-to-End Application Workflow Integration', () => {
       expect(connectionTestResult.printers_found).toHaveLength(1);
 
       const statusResult = await LabelBroAPI.fetchPrinters();
-      expect(statusResult![printerId].is_connected).toBe(true);
+      expect(statusResult?.[printerId]?.is_connected).toBe(true);
 
       const previewResult = await LabelBroAPI.fetchLabelPreviews({ text: labelText });
       expect(previewResult.full_labels).toHaveLength(1);
@@ -339,7 +337,7 @@ describe('End-to-End Application Workflow Integration', () => {
 
       // Preview generation succeeds
       const previewResponse = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
+        full_labels: [validBase64Image],
         small_labels: []
       };
 
@@ -385,6 +383,7 @@ describe('End-to-End Application Workflow Integration', () => {
 
       // Initial workflow starts successfully
       const discoveryResult = await LabelBroAPI.discoverPrinters();
+      assert(discoveryResult, 'expected a discovery result');
       expect(discoveryResult.success).toBe(true);
 
       const previewResult = await LabelBroAPI.fetchLabelPreviews({ text: labelText });
@@ -392,7 +391,7 @@ describe('End-to-End Application Workflow Integration', () => {
 
       // Check status reveals disconnection
       const statusResult = await LabelBroAPI.fetchPrinters();
-      expect(statusResult![printerId].is_connected).toBe(false);
+      expect(statusResult?.[printerId]?.is_connected).toBe(false);
 
       // Print attempt fails gracefully
       const printRequest = createPrintRequest({
@@ -421,6 +420,7 @@ describe('End-to-End Application Workflow Integration', () => {
         .mockRejectedValueOnce(new Error('Network timeout'));
 
       const discoveryResult = await LabelBroAPI.discoverPrinters();
+      assert(discoveryResult, 'expected a discovery result');
       expect(discoveryResult.success).toBe(true);
 
       // Preview fails due to network issue
@@ -436,25 +436,15 @@ describe('End-to-End Application Workflow Integration', () => {
 
       // Discovery succeeds
       mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve(validDiscoveryResponses.basicSuccess)
-        } as Response)
+        .mockResolvedValueOnce(flaskResponse(validDiscoveryResponses.basicSuccess))
         // Preview generation fails with server error
-        .mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          statusText: 'Internal Server Error',
-          json: () => Promise.resolve({ error: 'Image generation service unavailable' })
-        } as Response);
+        .mockResolvedValueOnce(flaskResponse({ error: 'Image generation service unavailable' }, 500));
 
       const discoveryResult = await LabelBroAPI.discoverPrinters();
+      assert(discoveryResult, 'expected a discovery result');
       expect(discoveryResult.success).toBe(true);
 
-      // Preview fails with server error - API returns error object, doesn't throw
-      const previewResult = await LabelBroAPI.fetchLabelPreviews({ text: labelText });
-      expect(previewResult.error).toBe('Image generation service unavailable');
+      await expect(LabelBroAPI.fetchLabelPreviews({ text: labelText })).rejects.toThrow('Image generation service unavailable');
     });
   });
 
@@ -485,8 +475,8 @@ describe('End-to-End Application Workflow Integration', () => {
       };
 
       const previewResponse = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
-        small_labels: [validBase64Image.replace('data:image/png;base64,', '')]
+        full_labels: [validBase64Image],
+        small_labels: [validBase64Image]
       };
 
       const printSuccessResponse = {
@@ -515,9 +505,10 @@ describe('End-to-End Application Workflow Integration', () => {
 
       // Discover multiple printers
       const discoveryResult = await LabelBroAPI.discoverPrinters();
+      assert(discoveryResult, 'expected a discovery result');
       expect(Object.keys(discoveryResult.data.printers)).toHaveLength(2);
-      expect(discoveryResult.data.printers[printer1Id].status).toBe("busy");
-      expect(discoveryResult.data.printers[printer2Id].status).toBe("ready");
+      expect(discoveryResult.data.printers[printer1Id]?.status).toBe("busy");
+      expect(discoveryResult.data.printers[printer2Id]?.status).toBe("ready");
 
       // Generate preview (printer-agnostic)
       const previewResult = await LabelBroAPI.fetchLabelPreviews({ text: labelText });
@@ -544,13 +535,13 @@ describe('End-to-End Application Workflow Integration', () => {
 
       // Mock responses for concurrent operations
       const preview1Response = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
+        full_labels: [validBase64Image],
         small_labels: []
       };
 
       const preview2Response = {
         full_labels: [],
-        small_labels: [validBase64Image.replace('data:image/png;base64,', '')]
+        small_labels: [validBase64Image]
       };
 
       const print1Response = {
@@ -652,8 +643,8 @@ describe('End-to-End Application Workflow Integration', () => {
       };
 
       const previewResponse = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
-        small_labels: [validBase64Image.replace('data:image/png;base64,', '')],
+        full_labels: [validBase64Image],
+        small_labels: [validBase64Image],
         metadata: {
           text: labelText,
           character_count: labelText.length,
@@ -690,6 +681,7 @@ describe('End-to-End Application Workflow Integration', () => {
 
       // Verify data consistency throughout workflow
       const discoveryResult = await LabelBroAPI.discoverPrinters();
+      assert(discoveryResult, 'expected a discovery result');
       const discoveredPrinter = discoveryResult.data.printers[printerId];
       
       const previewResult = await LabelBroAPI.fetchLabelPreviews({ text: labelText });
@@ -703,8 +695,8 @@ describe('End-to-End Application Workflow Integration', () => {
       const printResult = await LabelBroAPI.printLabels(printRequest);
 
       // Verify consistent data across all steps
-      expect(discoveredPrinter.id).toBe(printerId);
-      expect(previewResult.metadata.text).toBe(labelText);
+      expect(discoveredPrinter?.id).toBe(printerId);
+      expect(previewResult).toMatchObject({ metadata: { text: labelText } });
       expect(printResult.printer_id).toBe(printerId);
       expect(printResult.text_printed).toBe(labelText);
       expect(printResult.job_id).toBe(jobId);

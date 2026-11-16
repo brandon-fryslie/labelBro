@@ -1,26 +1,24 @@
+import type { MockedFunction } from 'vitest';
 // Integration tests for manual printer connection workflow
 // Tests the complete flow: IP Input → Connection Test → Result Processing → Status Update
 
 import { LabelBroAPI } from '../../src/api';
-import { TypeValidator } from '../../src/validation';
 import { 
-  validManualConnectionResults,
-  validPrintersResponses,
   printerStatuses,
   createManualConnectionResult,
   createPrinterData
 } from '../fixtures';
 
 describe('Manual Connection Workflow Integration', () => {
-  let mockFetch: jest.MockedFunction<typeof fetch>;
+  let mockFetch: MockedFunction<typeof fetch>;
 
   beforeEach(() => {
-    mockFetch = jest.fn(global.fetch) as jest.MockedFunction<typeof fetch>;
+    mockFetch = vi.fn(global.fetch) as MockedFunction<typeof fetch>;
     global.fetch = mockFetch;
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Successful Manual Connection Flow', () => {
@@ -65,24 +63,24 @@ describe('Manual Connection Workflow Integration', () => {
       expect(testResult.success).toBe(true);
       expect(testResult.target).toBe(targetIp);
       expect(testResult.printers_found).toHaveLength(1);
-      expect(testResult.printers_found![0].ip).toBe(targetIp);
-      expect(testResult.printers_found![0].is_connected).toBe(true);
+      expect(testResult.printers_found?.[0]?.ip).toBe(targetIp);
+      expect(testResult.printers_found?.[0]?.is_connected).toBe(true);
 
       // Step 2: Verify printer status after connection
       const statusResult = await LabelBroAPI.fetchPrinters();
       
       expect(statusResult).toBeDefined();
       expect(statusResult![expectedPrinter.id]).toBeDefined();
-      expect(statusResult![expectedPrinter.id].ip).toBe(targetIp);
-      expect(statusResult![expectedPrinter.id].status).toBe("ready");
+      expect(statusResult?.[expectedPrinter.id]?.ip).toBe(targetIp);
+      expect(statusResult?.[expectedPrinter.id]?.status).toBe("ready");
 
       // Verify API call sequence
       expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(mockFetch).toHaveBeenNthCalledWith(1,
-        'http://localhost:5100/printers/test',
+        '/api/printers/test',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ ip: targetIp })
+          body: JSON.stringify({ target: targetIp })
         })
       );
     });
@@ -112,7 +110,7 @@ describe('Manual Connection Workflow Integration', () => {
       expect(result.success).toBe(true);
       expect(result.target).toBe(hostname);
       expect(result.printers_found).toHaveLength(1);
-      expect(result.printers_found![0].ip).toBe(resolvedIp);
+      expect(result.printers_found?.[0]?.ip).toBe(resolvedIp);
     });
 
     test('should handle connection with specific port', async () => {
@@ -253,9 +251,9 @@ describe('Manual Connection Workflow Integration', () => {
       
       expect(result.success).toBe(true);
       expect(result.printers_found).toHaveLength(3);
-      expect(result.printers_found![0].ip).toBe("192.168.1.100");
-      expect(result.printers_found![1].ip).toBe("192.168.1.101");
-      expect(result.printers_found![2].ip).toBe("192.168.1.102");
+      expect(result.printers_found?.[0]?.ip).toBe("192.168.1.100");
+      expect(result.printers_found?.[1]?.ip).toBe("192.168.1.101");
+      expect(result.printers_found?.[2]?.ip).toBe("192.168.1.102");
       
       // Verify different models detected
       const models = result.printers_found!.map(p => p.model);
@@ -361,12 +359,12 @@ describe('Manual Connection Workflow Integration', () => {
       // Initial connection
       const connectionResult = await LabelBroAPI.testManualConnection(targetIp);
       expect(connectionResult.success).toBe(true);
-      expect(connectionResult.printers_found![0].is_connected).toBe(true);
+      expect(connectionResult.printers_found?.[0]?.is_connected).toBe(true);
 
       // Later status check
       const statusResult = await LabelBroAPI.fetchPrinters();
-      expect(statusResult![printerId].is_connected).toBe(false);
-      expect(statusResult![printerId].status).toBe("offline");
+      expect(statusResult?.[printerId]?.is_connected).toBe(false);
+      expect(statusResult?.[printerId]?.status).toBe("offline");
     });
 
     test('should handle connection state changes during long operations', async () => {
@@ -423,15 +421,15 @@ describe('Manual Connection Workflow Integration', () => {
 
       // Initial connection
       const connectionResult = await LabelBroAPI.testManualConnection(targetIp);
-      expect(connectionResult.printers_found![0].status).toBe("ready");
+      expect(connectionResult.printers_found?.[0]?.status).toBe("ready");
 
       // Check during operation
       const busyResult = await LabelBroAPI.fetchPrinters();
-      expect(busyResult![printerId].status).toBe("busy");
+      expect(busyResult?.[printerId]?.status).toBe("busy");
 
       // Check after operation
       const readyResult = await LabelBroAPI.fetchPrinters();
-      expect(readyResult![printerId].status).toBe("ready");
+      expect(readyResult?.[printerId]?.status).toBe("ready");
     });
   });
 
@@ -491,7 +489,7 @@ describe('Manual Connection Workflow Integration', () => {
       // Should still process valid data while handling invalid gracefully
       expect(result.success).toBe(true);
       expect(result.printers_found).toHaveLength(2);
-      expect(result.printers_found![0].id).toBe("valid_printer");
+      expect(result.printers_found?.[0]?.id).toBe("valid_printer");
     });
   });
 

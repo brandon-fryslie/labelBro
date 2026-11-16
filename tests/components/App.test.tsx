@@ -3,19 +3,19 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { App } from '../../src/components/App';
 
 // Mock the API module
-jest.mock('../../src/api', () => ({
+vi.mock('../../src/api', () => ({
   LabelBroAPI: {
-    fetchPrinters: jest.fn().mockResolvedValue({}),
-    discoverPrinters: jest.fn().mockResolvedValue({ success: true, data: { printers: {} } }),
-    fetchLabelPreviews: jest.fn().mockResolvedValue({ full_labels: [], small_labels: [] }),
-    printLabels: jest.fn().mockResolvedValue({ success: true }),
-    testManualConnection: jest.fn().mockResolvedValue({ success: true }),
-    connectManually: jest.fn().mockResolvedValue({ success: true }),
+    fetchPrinters: vi.fn().mockResolvedValue({}),
+    discoverPrinters: vi.fn().mockResolvedValue({ success: true, data: { printers: {} } }),
+    fetchLabelPreviews: vi.fn().mockResolvedValue({ full_labels: [], small_labels: [] }),
+    printLabels: vi.fn().mockResolvedValue({ success: true }),
+    testManualConnection: vi.fn().mockResolvedValue({ success: true }),
+    connectManually: vi.fn().mockResolvedValue({ success: true }),
   },
 }));
 
 // Mock React.lazy components to avoid async loading issues in tests
-jest.mock('../../src/components/LazyPrinterPanel', () => ({
+vi.mock('../../src/components/LazyPrinterPanel', () => ({
   LazyPrinterPanel: () => (
     <div>
       <h3>Printer Connection</h3>
@@ -25,7 +25,7 @@ jest.mock('../../src/components/LazyPrinterPanel', () => ({
   )
 }));
 
-jest.mock('../../src/components/LazyLabelPreview', () => ({
+vi.mock('../../src/components/LazyLabelPreview', () => ({
   LazyLabelPreview: () => (
     <div>
       <h2>Preview</h2>
@@ -33,7 +33,7 @@ jest.mock('../../src/components/LazyLabelPreview', () => ({
   )
 }));
 
-jest.mock('../../src/components/LazyHistoryPanel', () => ({
+vi.mock('../../src/components/LazyHistoryPanel', () => ({
   LazyHistoryPanel: ({ isVisible }: { isVisible: boolean }) => (
     <div className={`history-panel ${isVisible ? '' : 'hidden'}`}>
       <div>Label History</div>
@@ -41,7 +41,7 @@ jest.mock('../../src/components/LazyHistoryPanel', () => ({
   )
 }));
 
-jest.mock('../../src/components/LazyHelpModal', () => ({
+vi.mock('../../src/components/LazyHelpModal', () => ({
   LazyHelpModal: ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => 
     isOpen ? (
       <div>
@@ -51,7 +51,7 @@ jest.mock('../../src/components/LazyHelpModal', () => ({
     ) : null
 }));
 
-jest.mock('../../src/components/LabelCreator', () => ({
+vi.mock('../../src/components/LabelCreator', () => ({
   LabelCreator: () => (
     <div>
       <textarea 
@@ -70,7 +70,7 @@ jest.mock('../../src/components/LabelCreator', () => ({
   )
 }));
 
-jest.mock('../../src/components/LogsPanel', () => ({
+vi.mock('../../src/components/LogsPanel', () => ({
   LogsPanel: () => (
     <div>
       <div>Logs:</div>
@@ -80,37 +80,23 @@ jest.mock('../../src/components/LogsPanel', () => ({
 }));
 
 // Mock all other components to avoid complexity
-jest.mock('../../src/components/StatusBar', () => ({
+vi.mock('../../src/components/StatusBar', () => ({
   StatusBar: () => <div>Status Bar</div>
 }));
 
-jest.mock('../../src/components/ErrorDisplay', () => ({
+vi.mock('../../src/components/ErrorDisplay', () => ({
   ErrorDisplay: () => <div>Error Display</div>
 }));
 
-jest.mock('../../src/components/PerformanceDebugPanel', () => ({
+vi.mock('../../src/components/PerformanceDebugPanel', () => ({
   PerformanceDebugPanel: () => <div>Performance Panel</div>
 }));
 
-jest.mock('../../src/components/GlobalErrorBoundary', () => ({
+vi.mock('../../src/components/GlobalErrorBoundary', () => ({
   GlobalErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>
 }));
 
-// Use fake timers to control async behavior
-jest.useFakeTimers();
-
 describe('App Component', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
-  });
-
-  afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
-    jest.useFakeTimers();
-  });
-
   it('should render without crashing', async () => {
     await act(async () => {
       const { container } = render(

@@ -9,7 +9,7 @@ const PerformanceDebugPanel = React.lazy(() =>
 // Lightweight loading fallback for performance panel
 function PerformanceDebugPanelSkeleton(): React.ReactElement {
   // Only show in development - return empty div in production
-  if (process.env.NODE_ENV !== 'development') {
+  if (!import.meta.env.DEV) {
     return <div style={{ display: 'none' }} />;
   }
 
@@ -52,14 +52,14 @@ class PerformanceDebugPanelErrorBoundary extends React.Component<
       lazyLoading: true,
       componentStack: errorInfo.componentStack,
       errorType: 'lazy_component_load_failure',
-      isDevelopment: process.env.NODE_ENV === 'development'
+      isDevelopment: import.meta.env.DEV
     });
   }
 
   render(): React.ReactNode {
     if (this.state.hasError) {
       // Only show error in development
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         return (
           <div style={{
             position: 'fixed',
@@ -87,7 +87,7 @@ class PerformanceDebugPanelErrorBoundary extends React.Component<
 // Main lazy wrapper component
 export function LazyPerformanceDebugPanel(): React.ReactElement {
   // Don't render anything in production to save bundle space
-  if (process.env.NODE_ENV !== 'development') {
+  if (!import.meta.env.DEV) {
     return <div style={{ display: 'none' }} />;
   }
 

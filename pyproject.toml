@@ -28,7 +28,7 @@ where = ["."]
 include = ["label_bro*"]
 
 [tool.setuptools.package-data]
-label_bro = ["templates/*", "static/**/*"]
+label_bro = ["static/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["label_bro/tests", "tests"]

@@ -1,5 +1,8 @@
+import type { MockedFunction } from 'vitest';
 // API client tests with Typia validation integration
 import { LabelBroAPI } from '../../src/api';
+import type { PrintRequest } from '../../src/types';
+import { flaskResponse } from '../utils/test-utils';
 import { ValidationError, ValidationReporter } from '../../src/validation';
 import {
   validPrintersResponse,
@@ -15,11 +18,11 @@ import {
 } from '../fixtures/api-responses';
 
 // Mock fetch globally
-const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+const mockFetch = global.fetch as MockedFunction<typeof fetch>;
 
 describe('LabelBroAPI with Typia Validation', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     ValidationReporter.clearValidationHistory();
     
     // Mock DOM elements
@@ -48,34 +51,24 @@ describe('LabelBroAPI with Typia Validation', () => {
       const result = await LabelBroAPI.fetchLabelPreviews(labelData);
       
       expect(result).toEqual(validLabelPreviewData);
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:5100/previewLabels', expect.objectContaining({
+      expect(mockFetch).toHaveBeenCalledWith('/api/previewLabels', expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: expect.stringContaining('Test Label')
       }));
     });
 
-    it('should handle validation errors and report to AI', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-      
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(invalidLabelPreviewData),
-      } as Response);
+    it('rejects a malformed preview body and reports it to the backend log', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-      const labelData = {
-        data: {
-          text: 'Test Label',
-          shouldPrintFullLabel: true,
-          shouldPrintSmallLabel: true
-        }
-      };
+      // The preview answers with the malformed body; the validation report's own POST gets a 200.
+      mockFetch
+        .mockResolvedValueOnce(flaskResponse(invalidLabelPreviewData))
+        .mockResolvedValueOnce(flaskResponse({ status: 'logged' }));
 
-      const result = await LabelBroAPI.fetchLabelPreviews(labelData);
-      
-      // Should return the data even if validation fails (graceful degradation)
-      expect(result).toEqual(invalidLabelPreviewData);
+      await expect(LabelBroAPI.fetchLabelPreviews({ data: { text: 'Test Label' } })).rejects.toThrow(ValidationError);
+      expect(mockFetch).toHaveBeenCalledWith('/api/log-frontend-error', expect.objectContaining({ method: 'POST' }));
       
       consoleErrorSpy.mockRestore();
       consoleLogSpy.mockRestore();
@@ -95,24 +88,17 @@ describe('LabelBroAPI with Typia Validation', () => {
       await expect(LabelBroAPI.fetchLabelPreviews(labelData)).rejects.toThrow('Network error');
     });
 
-    it('should handle HTTP errors', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({ error: 'Server error' }),
-      } as Response);
+    it('rejects with Flask\'s error message on an HTTP error', async () => {
+      mockFetch.mockResolvedValueOnce(flaskResponse({ error: 'Server error' }, 500));
 
-      const labelData = {
-        data: {
-          text: 'Test Label',
-          shouldPrintFullLabel: true,
-          shouldPrintSmallLabel: true
-        }
-      };
+      await expect(LabelBroAPI.fetchLabelPreviews({ data: { text: 'Test Label' } })).rejects.toThrow('Server error');
+    });
 
-      const result = await LabelBroAPI.fetchLabelPreviews(labelData);
-      
-      expect(result).toEqual({ error: 'Server error' });
+    it('rejects with the HTTP status when the error body is not Flask\'s JSON', async () => {
+      // e.g. the Vite dev proxy's empty 500 while Flask is down
+      mockFetch.mockResolvedValueOnce(new Response('', { status: 500 }));
+
+      await expect(LabelBroAPI.fetchLabelPreviews({ data: { text: 'Test Label' } })).rejects.toThrow('HTTP 500');
     });
   });
 
@@ -129,8 +115,8 @@ describe('LabelBroAPI with Typia Validation', () => {
     });
 
     it('should handle validation errors for invalid printer response', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -196,26 +182,18 @@ describe('LabelBroAPI with Typia Validation', () => {
       const result = await LabelBroAPI.printLabels(validPrintRequest);
       
       expect(result).toEqual({ success: true });
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:5100/printLabels', expect.objectContaining({
+      expect(mockFetch).toHaveBeenCalledWith('/api/printLabels', expect.objectContaining({
         method: 'POST',
         body: JSON.stringify(validPrintRequest)
       }));
     });
 
     it('should handle invalid print request and still make API call', async () => {
-      // Mock the response that would be returned by the server
-      const mockResponse = {
-        ok: false,
-        status: 400,
-        json: () => Promise.resolve({ error: 'Invalid request' }),
-      } as Response;
+      // Every call answers 400: the validation report to /api/log-frontend-error is a fetch too.
+      mockFetch.mockImplementation(() => Promise.resolve(flaskResponse({ error: 'Invalid request' }, 400)));
 
-      // Use mockImplementation to ensure the mock persists through validation errors
-      mockFetch.mockImplementation(() => Promise.resolve(mockResponse));
-
-      const result = await LabelBroAPI.printLabels(invalidPrintRequest);
-      
-      expect(result).toEqual({ error: 'Invalid request' });
+      await expect(LabelBroAPI.printLabels(invalidPrintRequest as PrintRequest)).rejects.toThrow('Invalid request');
+      expect(mockFetch).toHaveBeenCalledWith('/api/printLabels', expect.objectContaining({ method: 'POST' }));
     });
   });
 
@@ -232,8 +210,8 @@ describe('LabelBroAPI with Typia Validation', () => {
     });
 
     it('should handle validation errors for invalid connection result', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -256,8 +234,8 @@ describe('LabelBroAPI with Typia Validation', () => {
   describe('AI Feedback Integration', () => {
     it('should accumulate validation errors for AI analysis', async () => {
       // Spy on the actual mocked localStorage, not Storage.prototype
-      const localStorageSetSpy = jest.spyOn(global.localStorage, 'setItem');
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const localStorageSetSpy = vi.spyOn(global.localStorage, 'setItem');
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
       // Use discoverPrinters since it logs to localStorage even with validation errors
       mockFetch.mockResolvedValue({
@@ -277,29 +255,5 @@ describe('LabelBroAPI with Typia Validation', () => {
       consoleLogSpy.mockRestore();
     });
 
-    it('should provide comprehensive error context for AI systems', async () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-      
-      // Mock response that will trigger validation error
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(invalidLabelPreviewData),
-      } as Response);
-
-      const labelData = {
-        data: {
-          text: 'Test Label',
-          shouldPrintFullLabel: true,
-          shouldPrintSmallLabel: true
-        }
-      };
-
-      const result = await LabelBroAPI.fetchLabelPreviews(labelData);
-      
-      // Should handle gracefully and log validation errors
-      expect(result).toBeDefined();
-      
-      consoleLogSpy.mockRestore();
-    });
   });
 });

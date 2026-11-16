@@ -322,7 +322,7 @@ export const createPrintRequest = (overrides: Partial<PrintRequest['data']> = {}
 });
 
 export const createMultipleLabelPreviews = (count: number): LabelPreviewData[] =>
-  Array.from({ length: count }, (_, i) => 
+  Array.from({ length: count }, () => 
     createLabelPreviewData({
       full_labels: [validBase64Image],
       small_labels: [validBase64Image]

@@ -7,7 +7,6 @@
 // - ./discovery-data.ts
 // - ./index.ts (for centralized imports)
 
-import { basePrinterData } from './printer-data';
 import { validBase64Image } from './label-data';
 
 // Legacy printer data - use printer-data.ts for new tests
@@ -110,7 +109,8 @@ export const validPrintRequest = {
   }
 };
 
-export const invalidPrintRequest = {
+// Deliberately not a PrintRequest: exercises runtime validation of bad input.
+export const invalidPrintRequest: unknown = {
   data: {
     text: 123, // Should be string
     shouldPrintFullLabel: "yes", // Should be boolean
@@ -168,6 +168,10 @@ export const edgeCaseResponses = {
 };
 
 // Deprecation warnings for development
+declare global {
+  var __deprecationWarningShown: boolean | undefined;
+}
+
 if (process.env.NODE_ENV === 'development') {
   const deprecationMessage = `
     ⚠️  DEPRECATION WARNING: api-responses.ts is deprecated

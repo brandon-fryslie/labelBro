@@ -35,7 +35,7 @@ class PerformanceMonitor {
   private metrics: Partial<PerformanceMetrics> = {};
   private observers: PerformanceObserver[] = [];
   private isInitialized = false;
-  private isDevelopment = process.env.NODE_ENV === 'development';
+  private isDevelopment = import.meta.env.DEV;
   private storedMetrics: Record<string, { value: number; rating: string; timestamp: number }> = {};
 
   public initialize(): void {

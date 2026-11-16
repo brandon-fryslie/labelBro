@@ -7,16 +7,16 @@ import './styles/globals.css';
 
 // Initialize error tracking first
 errorTracking.initialize({
-  environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-  sampleRate: process.env.NODE_ENV === 'development' ? 1.0 : 0.1,
-  tracesSampleRate: process.env.NODE_ENV === 'development' ? 1.0 : 0.1
+  environment: import.meta.env.PROD ? 'production' : 'development',
+  sampleRate: import.meta.env.DEV ? 1.0 : 0.1,
+  tracesSampleRate: import.meta.env.DEV ? 1.0 : 0.1
 });
 
 // Set up cross-system error reporting
 TypeScriptErrorReporter.setupGlobalErrorHandlers();
 
 // Development-only performance monitoring with complete tree shaking
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.DEV) {
   // Only import performance monitoring in development
   import('./utils/performance-monitor').then(({ performanceMonitor }) => {
     performanceMonitor.markStart('app-initialization');
@@ -67,7 +67,7 @@ function renderApp() {
     // Log successful initialization
     errorTracking.captureMessage('React application initialized successfully', 'info', {
       initialization: {
-        performance_monitoring: process.env.NODE_ENV === 'development',
+        performance_monitoring: import.meta.env.DEV,
         error_tracking: errorTracking.isAvailable(),
         container_found: true
       }

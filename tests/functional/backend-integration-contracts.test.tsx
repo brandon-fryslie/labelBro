@@ -1,3 +1,4 @@
+import type { MockedFunction } from 'vitest';
 /**
  * FUNCTIONAL TEST 3: Backend Integration Type Safety
  *
@@ -38,23 +39,19 @@
  */
 
 import { LabelBroAPI } from '../../src/api';
-import { DiscoveryResponse, ManualConnectionResult, LabelPreviewData } from '../../src/types';
-import { execSync, spawn, ChildProcess } from 'child_process';
-import * as http from 'http';
+import { flaskResponse } from '../utils/test-utils';
+import { DiscoveryResponse } from '../../src/types';
 
 describe('Functional Test: Backend Integration Type Safety', () => {
-  let mockFetch: jest.MockedFunction<typeof fetch>;
-  let flaskServer: ChildProcess | null = null;
-  const FLASK_PORT = 5100;
-  const FLASK_URL = `http://localhost:${FLASK_PORT}`;
+  let mockFetch: MockedFunction<typeof fetch>;
 
   beforeEach(() => {
-    mockFetch = jest.fn(global.fetch) as jest.MockedFunction<typeof fetch>;
+    mockFetch = vi.fn(global.fetch) as MockedFunction<typeof fetch>;
     global.fetch = mockFetch;
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('CRITICAL: Error Response Format Consistency', () => {
@@ -167,8 +164,7 @@ describe('Functional Test: Backend Integration Type Safety', () => {
 
       const endpoints = [
         { method: 'discoverPrinters', mockCall: () => LabelBroAPI.discoverPrinters() },
-        { method: 'fetchPrinters', mockCall: () => LabelBroAPI.fetchPrinters() },
-        { method: 'testManualConnection', mockCall: () => LabelBroAPI.testManualConnection('invalid') }
+        { method: 'fetchPrinters', mockCall: () => LabelBroAPI.fetchPrinters() }
       ];
 
       for (const endpoint of endpoints) {
@@ -374,25 +370,6 @@ describe('Functional Test: Backend Integration Type Safety', () => {
   });
 
   describe('INTEGRATION: Multiple Error Scenarios', () => {
-    test('should handle validation errors with proper structure', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: () => Promise.resolve({
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid printer ID format'
-          }
-        })
-      } as Response);
-
-      const result = await LabelBroAPI.testManualConnection('invalid@printer');
-
-      if (result !== null && result !== undefined) {
-        expect(result.success).toBe(false);
-      }
-    });
 
     test('should handle authorization errors with proper structure', async () => {
       mockFetch.mockResolvedValueOnce({
@@ -492,71 +469,15 @@ describe('Functional Test: Backend Integration Type Safety', () => {
       expect(result).toBeDefined();
     });
 
-    test('should have consistent error format across preview endpoint', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({
-          error: 'Preview generation failed'
-        })
-      } as Response);
+    test('preview and print reject with Flask\'s {error} message', async () => {
+      mockFetch
+        .mockResolvedValueOnce(flaskResponse({ error: 'Preview generation failed' }, 500))
+        .mockResolvedValueOnce(flaskResponse({ error: 'Printer not ready' }, 500));
 
-      const result = await LabelBroAPI.fetchLabelPreviews({ text: 'Test' });
-
-      // Preview endpoint returns different structure
-      // Should have error property
-      if ('error' in result) {
-        expect(result.error).toBeDefined();
-      }
-    });
-
-    test('should have consistent error format across manual connection endpoint', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({
-          success: false,
-          error: { code: 'CONNECTION_FAILED', message: 'Could not connect to printer' }
-        })
-      } as Response);
-
-      const result = await LabelBroAPI.testManualConnection('192.168.1.100');
-
-      expect(result).toBeDefined();
-      expect(result.success).toBe(false);
-    });
-
-    test('should have consistent error format across print endpoint', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({
-          success: false,
-          error: { code: 'PRINT_FAILED', message: 'Printer not ready' }
-        })
-      } as Response);
-
-      const printRequest = {
-        data: {
-          text: 'Test',
-          shouldPrintFullLabel: true,
-          shouldPrintSmallLabel: false,
-          printer_id: 'test_printer'
-        }
-      };
-
-      try {
-        const result = await LabelBroAPI.printLabels(printRequest);
-
-        if (result && typeof result === 'object') {
-          if ('success' in result) {
-            expect(result.success).toBe(false);
-          }
-        }
-      } catch (error) {
-        // Print might throw on error - that's OK for now
-        expect(error).toBeDefined();
-      }
+      await expect(LabelBroAPI.fetchLabelPreviews({ text: 'Test' })).rejects.toThrow('Preview generation failed');
+      await expect(LabelBroAPI.printLabels({
+        data: { text: 'Test', shouldPrintFullLabel: true, shouldPrintSmallLabel: false, printer_id: 'test_printer' }
+      })).rejects.toThrow('Printer not ready');
     });
   });
 

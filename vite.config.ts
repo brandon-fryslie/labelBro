@@ -1,28 +1,29 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { API_PREFIX } from './src/api/endpoints';
 
-export default defineConfig({
+// Flask serves its static folder at /static; FRONTEND_INDEX in label_bro/app.py names the page inside this directory.
+const DIST = 'dist';
+
+// The first port find_available_port tries in label_bro/app.py.
+const FLASK_ORIGIN = 'http://127.0.0.1:5099';
+
+export default defineConfig(({ command }) => ({
   plugins: [react()],
-  root: './src',
+  // The dev server serves from its root.
+  base: command === 'build' ? `/static/${DIST}/` : '/',
   build: {
-    outDir: '../label_bro/static/js',
-    rollupOptions: {
-      input: {
-        main: './src/main.tsx'
-      },
-      output: {
-        entryFileNames: 'bundle.js',
-        chunkFileNames: 'chunk-[name].js',
-        assetFileNames: 'asset-[name][extname]'
-      }
-    }
+    outDir: `label_bro/static/${DIST}`,
+    emptyOutDir: true,
+    sourcemap: true,
   },
   server: {
-    proxy: {
-      // Proxy API calls to Flask backend
-      '/printers': 'http://localhost:5000',
-      '/preview': 'http://localhost:5000',
-      '/print_labels': 'http://localhost:5000'
-    }
-  }
-});
+    proxy: { [API_PREFIX]: FLASK_ORIGIN },
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    include: ['tests/**/*.test.{ts,tsx}'],
+    setupFiles: ['tests/setup.ts'],
+  },
+}));

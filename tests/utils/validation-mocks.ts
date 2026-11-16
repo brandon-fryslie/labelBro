@@ -35,12 +35,12 @@ export const validationErrorScenarios = {
 
 // Mock validation responses
 export const createMockValidationReporter = () => ({
-  sendToBackend: jest.fn().mockResolvedValue({
+  sendToBackend: vi.fn().mockResolvedValue({
     success: true,
     feedback_generated: true,
     feedback_id: 'mock-feedback-123'
   }),
-  generateAIFeedback: jest.fn().mockReturnValue({
+  generateAIFeedback: vi.fn().mockReturnValue({
     summary: 'Mock validation error summary',
     suggestions: ['Mock suggestion 1', 'Mock suggestion 2'],
     severity: 'medium'

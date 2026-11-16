@@ -21,7 +21,7 @@ export function useLabels() {
     const labelText = text ?? state.labelText;
     
     if (!labelText.trim()) {
-      setLabelPreviews(null);
+      setLabelPreviews({ kind: 'none' });
       return;
     }
 
@@ -40,11 +40,12 @@ export function useLabels() {
       };
       
       const previews = await LabelBroAPI.fetchLabelPreviews(labelData);
-      setLabelPreviews(previews);
+      setLabelPreviews({ kind: 'ready', previews });
       addLog('Label previews generated successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate previews';
-      setError(errorMessage);
+      // Replaces the last previews, which belong to other text, so the pane shows this failure instead.
+      setLabelPreviews({ kind: 'failed', message: errorMessage });
       addLog(`Preview generation failed: ${errorMessage}`);
     } finally {
       setIsGeneratingPreviews(false);
@@ -71,28 +72,22 @@ export function useLabels() {
         }
       };
 
+      // [LAW:no-silent-failure] exception: Flask answers 200 even when a label fails to print (labelbro-backend-1k8.my5).
       const result = await LabelBroAPI.printLabels(printRequest);
-      
-      // Handle print result
-      if (result.error) {
-        setError(result.error);
-        addLog(`Print failed: ${result.error}`);
-      } else {
-        addLog('Label printed successfully');
-        
-        // Add to history if print was successful
-        if ((window as any).addToLabelHistory) {
-          (window as any).addToLabelHistory(state.labelText, {
-            printFullLabel: state.printFullLabel,
-            printSmallLabel: state.printSmallLabel
-          });
-        }
-        
-        // Clear textarea if clearAfterPrint is enabled
-        if (state.clearAfterPrint) {
-          setLabelText('');
-          addLog('Label text cleared after print');
-        }
+      addLog('Label printed successfully');
+
+      // Add to history if print was successful
+      if ((window as any).addToLabelHistory) {
+        (window as any).addToLabelHistory(state.labelText, {
+          printFullLabel: state.printFullLabel,
+          printSmallLabel: state.printSmallLabel
+        });
+      }
+
+      // Clear textarea if clearAfterPrint is enabled
+      if (state.clearAfterPrint) {
+        setLabelText('');
+        addLog('Label text cleared after print');
       }
       
       return result;

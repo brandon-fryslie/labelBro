@@ -34,7 +34,7 @@ uv sync --extra dev
 # Install Node and pnpm if you don't have them (pnpm uses the version pinned in package.json)
 brew install node pnpm
 
-# Build the frontend bundle (label_bro/static/js/; not committed)
+# Build the frontend (label_bro/static/dist/; not committed)
 pnpm install
 pnpm build
 
@@ -63,15 +63,16 @@ address from another device to use the application from a phone, ipad, etc.
 This project uses:
 - **Backend**: Python Flask with the brother_ql library; labels rendered with Cairo (pycairo)
 - **Frontend**: React with TypeScript
-- **Build**: esbuild, driven by `build-with-error-reporting.js`
+- **Build**: Vite (`vite.config.ts`)
 - **Package Management**: uv for Python, pnpm for Node.js
-- **Testing**: Jest for frontend, pytest for backend
+- **Testing**: Vitest with jsdom and Testing Library for frontend, pytest for backend
 
 ### Running Tests
 
 ```shell
 uv run --extra dev pytest
 pnpm test
+pnpm typecheck
 ```
 
 ### Running in Development Mode
@@ -80,9 +81,11 @@ pnpm test
 # Terminal 1: Start Flask backend
 uv run python -m label_bro.app
 
-# Terminal 2: Rebuild the bundle and type-check on every change
+# Terminal 2: Vite dev server with hot reload; it proxies /api to Flask on port 5099
 pnpm dev
 ```
+
+Browse to the URL Vite prints (http://localhost:5173).
 
 ## Notes
 
@@ -108,14 +111,15 @@ directly.
 
 ### API
 
-The Flask backend provides these endpoints:
-- `GET /` - Main web interface
-- `GET /printers` - List discovered printers
-- `POST /printers/discover` - Run printer discovery
-- `POST /printers/test` - Test a manual connection to an IP or subnet
-- `POST /previewLabels` - Generate label previews
-- `POST /printLabels` - Print labels to the selected printer
-- `POST /log-frontend-error` - Record a frontend error in the server log
+The Flask backend serves the web interface at `GET /` and its JSON API under `/api`:
+- `GET /api/printers` - List discovered printers
+- `POST /api/printers/discover` - Run printer discovery
+- `POST /api/printers/test` - Test a manual connection to an IP or subnet
+- `POST /api/previewLabels` - Generate label previews
+- `POST /api/printLabels` - Print labels to the selected printer
+- `POST /api/log-frontend-error` - Record a frontend error in the server log
+
+A failed request answers with a non-2xx status and `{"error": "<message>"}`.
 
 ## Troubleshooting
 
@@ -149,12 +153,12 @@ label_bro/
 ├── label_bro/           # Python Flask backend
 │   ├── app.py          # Main Flask application
 │   ├── utils/          # Printer utilities and label creation
-│   ├── templates/      # HTML templates
-│   └── static/         # Static files and built frontend
+│   └── static/dist/    # Built frontend (pnpm build), served at /
 ├── src/                # React TypeScript frontend source
 │   ├── components/     # React components
 │   ├── hooks/          # Custom React hooks
 │   └── api/           # API client
+├── index.html          # The page shell; Vite builds it and serves it in dev
 ├── tests/              # Frontend tests
 ├── pyproject.toml      # Python dependencies and metadata
 ├── package.json        # Node.js dependencies

@@ -1,14 +1,22 @@
+import type { Mock, MockedFunction } from 'vitest';
 // Integration tests for cross-system error logging (frontend -> backend)
 import { ValidationError, ValidationReporter } from '../../src/validation';
 import { TypeScriptErrorReporter } from '../../src/utils/error-reporter';
 
 // Mock fetch for testing
-global.fetch = jest.fn();
+global.fetch = vi.fn();
+
+// The parsed JSON body of the first fetch call.
+function firstFetchBody() {
+  const firstCall = (fetch as MockedFunction<typeof fetch>).mock.calls[0];
+  if (!firstCall) throw new Error('expected fetch to have been called');
+  return JSON.parse(firstCall[1]?.body as string);
+}
 
 describe('Cross-System Error Logging', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValue({
+    vi.clearAllMocks();
+    (fetch as MockedFunction<typeof fetch>).mockResolvedValue({
       ok: true,
       json: async () => ({ status: 'logged' })
     } as Response);
@@ -32,7 +40,7 @@ describe('Cross-System Error Logging', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       // Verify the request was made with correct structure
-      expect(fetch).toHaveBeenCalledWith('/log-frontend-error', expect.objectContaining({
+      expect(fetch).toHaveBeenCalledWith('/api/log-frontend-error', expect.objectContaining({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -40,8 +48,7 @@ describe('Cross-System Error Logging', () => {
       }));
 
       // Parse and verify the request body structure
-      const callArgs = (fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
-      const requestBody = JSON.parse(callArgs[1]?.body as string);
+      const requestBody = firstFetchBody();
       
       expect(requestBody).toMatchObject({
         type: 'TYPIA_VALIDATION_ERROR',
@@ -61,8 +68,8 @@ describe('Cross-System Error Logging', () => {
     });
 
     it('should handle backend unavailable gracefully', async () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-      (fetch as jest.MockedFunction<typeof fetch>).mockRejectedValue(
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      (fetch as MockedFunction<typeof fetch>).mockRejectedValue(
         new Error('Network error')
       );
 
@@ -86,7 +93,7 @@ describe('Cross-System Error Logging', () => {
     });
 
     it('should maintain existing console logging behavior', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       
       const mockValidationError = new ValidationError(
         'Test validation error',
@@ -114,15 +121,14 @@ describe('Cross-System Error Logging', () => {
 
       await TypeScriptErrorReporter.reportRuntimeError(testError, 'test-context');
 
-      expect(fetch).toHaveBeenCalledWith('/log-frontend-error', expect.objectContaining({
+      expect(fetch).toHaveBeenCalledWith('/api/log-frontend-error', expect.objectContaining({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         }
       }));
       
-      const callArgs = (fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
-      const requestBody = JSON.parse(callArgs[1]?.body as string);
+      const requestBody = firstFetchBody();
       
       expect(requestBody).toMatchObject({
         type: 'JAVASCRIPT_RUNTIME_ERROR',
@@ -150,15 +156,14 @@ describe('Cross-System Error Logging', () => {
 
       await TypeScriptErrorReporter.reportCompilationError(compilationError);
 
-      expect(fetch).toHaveBeenCalledWith('/log-frontend-error', expect.objectContaining({
+      expect(fetch).toHaveBeenCalledWith('/api/log-frontend-error', expect.objectContaining({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         }
       }));
       
-      const callArgs = (fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
-      const requestBody = JSON.parse(callArgs[1]?.body as string);
+      const requestBody = firstFetchBody();
       
       expect(requestBody).toMatchObject({
         type: 'TYPESCRIPT_COMPILATION_ERROR',
@@ -196,8 +201,7 @@ describe('Cross-System Error Logging', () => {
       ValidationReporter.sendToBackend(mockError);
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      const callArgs = (fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
-      const requestBody = JSON.parse(callArgs[1]?.body as string);
+      const requestBody = firstFetchBody();
 
       expect(requestBody).toMatchObject({
         type: 'TYPIA_VALIDATION_ERROR',
@@ -256,9 +260,9 @@ describe('Cross-System Error Logging', () => {
     beforeEach(() => {
       // Mock localStorage
       const localStorageMock = {
-        getItem: jest.fn(),
-        setItem: jest.fn(),
-        removeItem: jest.fn()
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn()
       };
       Object.defineProperty(window, 'localStorage', { value: localStorageMock });
     });
@@ -266,7 +270,7 @@ describe('Cross-System Error Logging', () => {
     it('should store validation errors in localStorage for debugging', () => {
       const mockError = new ValidationError('Test error', [], {});
       
-      (localStorage.getItem as jest.Mock).mockReturnValue('[]');
+      (localStorage.getItem as Mock).mockReturnValue('[]');
 
       ValidationReporter.reportToAI(mockError);
 
@@ -282,13 +286,14 @@ describe('Cross-System Error Logging', () => {
         feedback: JSON.stringify({ message: `Error ${i}` })
       }));
 
-      (localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify(mockExistingErrors));
+      (localStorage.getItem as Mock).mockReturnValue(JSON.stringify(mockExistingErrors));
 
       const mockError = new ValidationError('Final validation error', [], {});
       ValidationReporter.reportToAI(mockError);
 
       expect(localStorage.setItem).toHaveBeenCalled();
-      const lastCall = (localStorage.setItem as jest.Mock).mock.calls.slice(-1)[0];
+      const lastCall = (localStorage.setItem as Mock).mock.lastCall;
+      if (!lastCall) throw new Error('expected localStorage.setItem to have been called');
       const storedData = JSON.parse(lastCall[1]);
       
       // Should maintain 50 item limit
@@ -299,7 +304,7 @@ describe('Cross-System Error Logging', () => {
       expect(lastEntry.feedback).toContain('Runtime Type Validation Failed');
       
       // Should still contain one of the original errors (not the very first, as it gets rotated out)
-      const hasOriginalError = storedData.some(entry => 
+      const hasOriginalError = storedData.some((entry: { feedback: string }) => 
         entry.feedback.includes('Error ') && !entry.feedback.includes('Runtime Type Validation Failed')
       );
       expect(hasOriginalError).toBe(true);
