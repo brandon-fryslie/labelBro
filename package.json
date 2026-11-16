@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "TypeScript for labelBro frontend - Flask web application for Brother QL-800 Label Printers",
   "private": true,
+  "packageManager": "pnpm@10.28.2",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "node build-with-error-reporting.js",

@@ -33,6 +33,13 @@ ln -s /opt/homebrew/lib ~/lib
 # Create virtual environment and install all dependencies
 uv sync
 
+# Install Node and pnpm if you don't have them (pnpm uses the version pinned in package.json)
+brew install node pnpm
+
+# Build the frontend bundle (label_bro/static/js/; not committed)
+pnpm install
+pnpm build
+
 # Run the app
 uv run python label_bro/app.py
 
@@ -61,6 +68,10 @@ ln -s /opt/homebrew/lib ~/lib
 
 # install python dependencies from pyproject.toml
 pip install -e .
+
+# build the frontend bundle (not committed)
+pnpm install
+pnpm build
 
 # run the app
 python3 -m label_bro.app
@@ -139,14 +150,14 @@ This project uses:
 - **Backend**: Python Flask with Brother QL library
 - **Frontend**: React with TypeScript
 - **Build**: Vite for frontend bundling
-- **Package Management**: uv for Python, npm for Node.js
+- **Package Management**: uv for Python, pnpm for Node.js
 - **Testing**: Jest for frontend, pytest for backend
 
 ### Building the Frontend
 
 ```shell
-npm install
-npm run build
+pnpm install
+pnpm build
 ```
 
 ### Running in Development Mode
@@ -156,7 +167,7 @@ npm run build
 uv run python label_bro/app.py
 
 # Terminal 2: Start frontend development server
-npm run dev
+pnpm dev
 ```
 
 ## Troubleshooting
