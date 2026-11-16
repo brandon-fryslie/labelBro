@@ -13,10 +13,10 @@ from brother_ql import conversion
 from brother_ql.backends.helpers import send
 from brother_ql.models import ALL_MODELS
 from brother_ql.raster import BrotherQLRaster
-from zeroconf import ServiceBrowser, ServiceListener, Zeroconf
+from zeroconf import ServiceBrowser, ServiceInfo, ServiceListener, Zeroconf
 
 from . import quicksnmp
-from .brother_protocol import BrotherProtocol, NetworkScanner
+from .brother_protocol import BrotherProtocol, NetworkScanner, appsocket_listening
 
 
 @dataclasses.dataclass
@@ -42,20 +42,16 @@ def get_printer_info(printer_id: str) -> PrinterInfo:
     return _discovered_printers[printer_id]
 
 
-def verify_printer_available(ip: str, port: int = 9100, timeout: float = 2.0) -> bool:
-    """Verify a printer is actually available and responding"""
-    try:
-        with socket.create_connection((ip, port), timeout=timeout):
-            return True
-    except OSError:
-        # refused, unreachable or timed out: nothing is listening there
-        return False
-
-
 def verify_usb_printer_available() -> dict | None:
     """Return the attached USB Brother QL printer, or None when there is none"""
-    # find() returns one Device for find_all=False; the isinstance narrows its declared Device | Generator.
-    dev = usb.core.find(idVendor=0x04F9, idProduct=0x209B)
+    try:
+        # find() returns one Device for find_all=False; the isinstance narrows its declared Device | Generator.
+        dev = usb.core.find(idVendor=0x04F9, idProduct=0x209B)
+    except usb.core.NoBackendError:
+        # [LAW:no-silent-failure] without libusb this host cannot see USB printers at all; say so, and let
+        # network discovery, which does not need libusb, still run.
+        print("USB discovery unavailable: libusb not found (macOS: `brew install libusb`)")
+        return None
     if not isinstance(dev, usb.core.Device):
         return None
     return {"identifier": "usb://0x04f9:0x209b", "model": "Brother QL-Series"}
@@ -119,7 +115,7 @@ class BrotherPrinterListener(ServiceListener):
         self.remove_service(zc, type_, name)
         self.add_service(zc, type_, name)
 
-    def _parse_brother_printer_info(self, info, service_type: str, name: str) -> dict | None:
+    def _parse_brother_printer_info(self, info: ServiceInfo, service_type: str, name: str) -> dict | None:
         """Parse Brother printer info from mDNS service info using TXT records"""
         try:
             # Get IP address
@@ -129,14 +125,15 @@ class BrotherPrinterListener(ServiceListener):
             ip = socket.inet_ntoa(info.addresses[0])
             port = info.port or 9100
 
-            # Parse TXT records for Brother printer identification
-            properties = info.properties if info.properties else {}
+            # [LAW:parse-dont-validate] a key-only TXT entry (an RFC 6763 boolean attribute) decodes to None;
+            # it carries no value, so it reads as "" and every extractor below sees plain strings.
+            txt = {key: value or "" for key, value in info.decoded_properties.items()}
 
             # Extract key TXT record fields
-            model = self._extract_model_from_txt(properties)
-            manufacturer = self._extract_manufacturer_from_txt(properties)
-            mac_address = self._extract_mac_from_txt(properties)
-            user_name = self._extract_user_name_from_txt(properties)
+            model = self._extract_model_from_txt(txt)
+            manufacturer = self._extract_manufacturer_from_txt(txt)
+            mac_address = self._extract_mac_from_txt(txt)
+            user_name = self._extract_user_name_from_txt(txt)
 
             # Verify this is a Brother printer
             if not self._is_brother_printer(model, manufacturer, name):
@@ -153,12 +150,7 @@ class BrotherPrinterListener(ServiceListener):
                 "user_name": user_name,
                 "service_type": service_type,
                 "discovery_method": "mDNS_TXT",
-                "txt_records": {
-                    (k.decode("utf-8", "ignore") if isinstance(k, bytes) else str(k)): (
-                        v.decode("utf-8", "ignore") if isinstance(v, bytes) else str(v) if v is not None else ""
-                    )
-                    for k, v in properties.items()
-                },
+                "txt_records": txt,
                 "hostname": info.server if info.server else f"{ip}::{port}",
             }
 
@@ -169,47 +161,47 @@ class BrotherPrinterListener(ServiceListener):
             print(f"  mDNS: Error parsing service info for {name}: {e}")
             return None
 
-    def _extract_model_from_txt(self, properties: dict[bytes, bytes]) -> str:
+    def _extract_model_from_txt(self, txt: dict[str, str]) -> str:
         """Extract precise model from TXT records using Brother's standard fields"""
         # Try 'ty' field first (Brother QL-810W format)
-        model = properties.get(b"ty", b"").decode("utf-8", "ignore")
+        model = txt.get("ty", "")
         if model and "QL-" in model.upper():
             return model
 
         # Try 'product' field
-        product = properties.get(b"product", b"").decode("utf-8", "ignore")
+        product = txt.get("product", "")
         if product and "QL-" in product.upper():
             return product
 
         # Try USB model field
-        usb_model = properties.get(b"usb_MDL", b"").decode("utf-8", "ignore")
+        usb_model = txt.get("usb_MDL", "")
         if usb_model and "QL-" in usb_model.upper():
             return usb_model
 
         return "Unknown Brother"
 
-    def _extract_manufacturer_from_txt(self, properties: dict[bytes, bytes]) -> str:
+    def _extract_manufacturer_from_txt(self, txt: dict[str, str]) -> str:
         """Extract manufacturer from TXT records"""
         # Try USB manufacturer field
-        usb_mfg = properties.get(b"usb_MFG", b"").decode("utf-8", "ignore")
+        usb_mfg = txt.get("usb_MFG", "")
         if usb_mfg:
             return usb_mfg
 
         # Try generic manufacturer field
-        mfg = properties.get(b"mfg", b"").decode("utf-8", "ignore")
+        mfg = txt.get("mfg", "")
         if mfg:
             return mfg
 
         return "Unknown"
 
-    def _extract_mac_from_txt(self, properties: dict[bytes, bytes]) -> str | None:
+    def _extract_mac_from_txt(self, txt: dict[str, str]) -> str | None:
         """Extract MAC address from TXT records"""
-        mac = properties.get(b"mac", b"").decode("utf-8", "ignore")
+        mac = txt.get("mac", "")
         return mac if mac else None
 
-    def _extract_user_name_from_txt(self, properties: dict[bytes, bytes]) -> str | None:
+    def _extract_user_name_from_txt(self, txt: dict[str, str]) -> str | None:
         """Extract user-assigned printer name from TXT records"""
-        note = properties.get(b"note", b"").decode("utf-8", "ignore")
+        note = txt.get("note", "")
         return note if note else None
 
     def _is_brother_printer(self, model: str, manufacturer: str, service_name: str) -> bool:
@@ -246,7 +238,7 @@ def discover_printers_snmp_broadcast(timeout: float = 3.0) -> list[dict]:
     verified_printers = []
     for printer in discovered:
         ip = printer["ip"]
-        if verify_printer_available(ip, 9100):
+        if appsocket_listening(ip):
             verified_printers.append(printer)
             print(f"  Verified Brother printer: {ip} -> {printer['model']}")
         else:
@@ -265,7 +257,7 @@ def discover_printers_snmp_targeted(ip_ranges: list[str], timeout: float = 0.5) 
     def check_single_ip(ip_str: str) -> dict | None:
         """Check a single IP for Brother printer via direct port connection"""
         # Port 9100 (printer port) open means likely a printer - try to identify it
-        if not verify_printer_available(ip_str, 9100, timeout):
+        if not appsocket_listening(ip_str, timeout=timeout):
             return None
         model = identify_brother_printer(ip_str)
         if not model:
@@ -462,32 +454,24 @@ def test_manual_connection(target: str) -> dict:
         # Use parallel port scanning (skip SNMP since it doesn't work)
         discovered = discover_printers_snmp_targeted([target], timeout=0.5)
 
-        # Get detailed media info for discovered printers in parallel
-        printer_results = []
-        lock = threading.Lock()
-
-        def get_printer_details(printer):
+        def get_printer_details(printer) -> dict | None:
             ip = printer["ip"]
             media_info = get_printer_media_info(ip, timeout=3)
+            if not (media_info and media_info["is_brother"]):
+                return None
+            return {
+                "ip": ip,
+                "model": media_info["model"],
+                "media_loaded": media_info["media_loaded"],
+                "media_width": media_info["media_width"],
+                "media_type": media_info["media_type"],
+                "printer_ready": media_info["printer_ready"],
+                "raw_status": media_info["raw_status"],
+            }
 
-            if media_info and media_info["is_brother"]:
-                printer_result = {
-                    "ip": ip,
-                    "model": media_info["model"],
-                    "media_loaded": media_info["media_loaded"],
-                    "media_width": media_info["media_width"],
-                    "media_type": media_info["media_type"],
-                    "printer_ready": media_info["printer_ready"],
-                    "raw_status": media_info["raw_status"],
-                }
-                with lock:
-                    printer_results.append(printer_result)
-
-        # Parallel media info gathering
-        if discovered:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=min(10, len(discovered))) as executor:
-                futures = [executor.submit(get_printer_details, printer) for printer in discovered]
-                concurrent.futures.wait(futures, timeout=10)
+        # [LAW:no-silent-failure] map() re-raises a worker's exception here instead of leaving it unread in a Future.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            printer_results = [details for details in executor.map(get_printer_details, discovered) if details]
 
         result["printers_found"] = printer_results
         result["success"] = len(result["printers_found"]) > 0
@@ -619,7 +603,7 @@ def discover_all_printers() -> dict[str, PrinterInfo]:
             continue
 
         # Basic connectivity check
-        if not verify_printer_available(ip, port):
+        if not appsocket_listening(ip, port):
             print(f"  {ip}: Not responding - skipping")
             continue
 

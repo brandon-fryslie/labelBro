@@ -230,7 +230,7 @@ class BrotherProtocol:
     def _fallback_identification(cls, ip: str) -> BrotherPrinterInfo | None:
         """Fallback identification when standard commands don't work"""
 
-        if not cls.is_brother_printer(ip, timeout=3.0):
+        if not appsocket_listening(ip, timeout=3.0):
             return None
 
         # Connected successfully to port 9100, likely a printer
@@ -333,17 +333,17 @@ class BrotherProtocol:
         # Return default model if we can't determine specific model
         return "QL-720NW"
 
-    @staticmethod
-    def is_brother_printer(ip: str, timeout: float = 3.0) -> bool:
-        """Quick check if device at IP is a Brother printer"""
-        # If port 9100 (printer port) is open, assume it's a printer:
-        # many Brother printers accept connections but don't respond to commands
-        try:
-            with socket.create_connection((ip, 9100), timeout=timeout):
-                return True
-        except OSError:
-            # refused, unreachable or timed out: nothing is listening there
-            return False
+
+def appsocket_listening(ip: str, port: int = 9100, timeout: float = 2.0) -> bool:
+    """Whether something accepts connections on the AppSocket (raw print) port"""
+    # [LAW:one-source-of-truth] the one port-9100 probe; an open port says "likely a printer", not which one,
+    # because many Brother printers accept the connection and never answer a command.
+    try:
+        with socket.create_connection((ip, port), timeout=timeout):
+            return True
+    except OSError:
+        # refused, unreachable or timed out: nothing is listening there
+        return False
 
 
 class NetworkScanner:
@@ -397,7 +397,7 @@ class NetworkScanner:
 
         def scan_single_ip(ip_str: str) -> BrotherPrinterInfo | None:
             """Scan a single IP for Brother printer"""
-            if not BrotherProtocol.is_brother_printer(ip_str, timeout=timeout):
+            if not appsocket_listening(ip_str, timeout=timeout):
                 return None
             printer_info = BrotherProtocol.identify_printer(ip_str)
             if printer_info:

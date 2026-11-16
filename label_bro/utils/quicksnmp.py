@@ -1,7 +1,7 @@
 import socket
 import time
 
-from .brother_protocol import BrotherProtocol
+from .brother_protocol import appsocket_listening
 
 
 class SNMPPacket:
@@ -196,7 +196,7 @@ def discover_printers_broadcast(timeout: float = 5.0, max_responses: int = 10) -
 
             # Many printers respond to SNMP even without "Brother" in the text;
             # one listening on port 9100 (printer port) counts as a printer
-            if not is_brother and len(data) > 30 and BrotherProtocol.is_brother_printer(ip, timeout=0.5):
+            if not is_brother and len(data) > 30 and appsocket_listening(ip, timeout=0.5):
                 is_brother = True
                 model = "Network Printer"
 
