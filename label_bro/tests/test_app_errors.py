@@ -106,3 +106,22 @@ def test_find_available_port_raises_when_range_is_taken():
 
         with pytest.raises(RuntimeError, match=f'^No free port in {taken}-{taken}$'):
             app_module.find_available_port(start_port=taken, max_attempts=1)
+
+
+def test_startup_refuses_to_run_without_frontend_bundle(tmp_path):
+    with pytest.raises(SystemExit, match='run `pnpm install && pnpm build` first'):
+        app_module.require_frontend_bundle(str(tmp_path))
+
+
+def test_startup_accepts_built_frontend_bundle(tmp_path):
+    bundle = tmp_path / app_module.FRONTEND_BUNDLE
+    bundle.parent.mkdir()
+    bundle.write_text('')
+
+    app_module.require_frontend_bundle(str(tmp_path))
+
+
+def test_index_loads_the_frontend_bundle(client):
+    page = client.get('/').get_data(as_text=True)
+
+    assert f'/static/{app_module.FRONTEND_BUNDLE}' in page

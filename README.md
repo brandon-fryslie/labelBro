@@ -33,7 +33,10 @@ ln -s /opt/homebrew/lib ~/lib
 # Create virtual environment and install all dependencies
 uv sync
 
-# Build the frontend bundle (label_bro/static/js/bundle.*; not committed)
+# Install Node and pnpm if you don't have them (pnpm uses the version pinned in package.json)
+brew install node pnpm
+
+# Build the frontend bundle (label_bro/static/js/; not committed)
 pnpm install
 pnpm build
 
