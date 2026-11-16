@@ -91,12 +91,13 @@ pnpm dev
 Discovery runs when the server starts and on demand from the UI.  In order:
 - USB: a Brother printer connected over USB
 - SNMP broadcast on the local network
-- SNMP targeted scan of the local /24, when broadcast finds fewer than two printers
+- Port 9100 probe of the local network ranges, when the SNMP broadcast finds fewer than two printers
 - mDNS/Bonjour
-- Port 9100 scan, only when nothing else found a printer
+- Port 9100 scan, only when none of the network methods above found a printer
 
-Every network printer found is checked for connectivity and loaded media before it is listed.  The UI can also test a
-specific IP address or subnet directly.
+A network printer is listed only if it answers on its port and identifies as a Brother printer.  One with no media
+loaded, or not ready, is still listed, flagged with those issues.  The UI can also test a specific IP address or subnet
+directly.
 
 ### Compatibility
 

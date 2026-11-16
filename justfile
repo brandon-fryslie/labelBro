@@ -113,7 +113,7 @@ clean:
 # Run tests
 test:
     @echo "🧪 Running Python tests..."
-    uv run --extra dev python3 -m label_bro.tests.test_cli
+    uv run --extra dev pytest
     @echo "🔍 Running TypeScript type checking..."
     npm run typecheck
     @echo "🧪 Running TypeScript/Typia validation tests..."
