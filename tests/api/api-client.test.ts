@@ -3,7 +3,7 @@ import type { MockedFunction } from 'vitest';
 import { LabelBroAPI } from '../../src/api';
 import type { PrintRequest } from '../../src/types';
 import { flaskResponse } from '../utils/test-utils';
-import { ValidationReporter } from '../../src/validation';
+import { ValidationError, ValidationReporter } from '../../src/validation';
 import {
   validPrintersResponse,
   invalidPrintersResponse,
@@ -58,27 +58,17 @@ describe('LabelBroAPI with Typia Validation', () => {
       }));
     });
 
-    it('should handle validation errors and report to AI', async () => {
+    it('rejects a malformed preview body and reports it to the backend log', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(invalidLabelPreviewData),
-      } as Response);
 
-      const labelData = {
-        data: {
-          text: 'Test Label',
-          shouldPrintFullLabel: true,
-          shouldPrintSmallLabel: true
-        }
-      };
+      // The preview answers with the malformed body; the validation report's own POST gets a 200.
+      mockFetch
+        .mockResolvedValueOnce(flaskResponse(invalidLabelPreviewData))
+        .mockResolvedValueOnce(flaskResponse({ status: 'logged' }));
 
-      const result = await LabelBroAPI.fetchLabelPreviews(labelData);
-      
-      // Should return the data even if validation fails (graceful degradation)
-      expect(result).toEqual(invalidLabelPreviewData);
+      await expect(LabelBroAPI.fetchLabelPreviews({ data: { text: 'Test Label' } })).rejects.toThrow(ValidationError);
+      expect(mockFetch).toHaveBeenCalledWith('/api/log-frontend-error', expect.objectContaining({ method: 'POST' }));
       
       consoleErrorSpy.mockRestore();
       consoleLogSpy.mockRestore();
@@ -265,29 +255,5 @@ describe('LabelBroAPI with Typia Validation', () => {
       consoleLogSpy.mockRestore();
     });
 
-    it('should provide comprehensive error context for AI systems', async () => {
-      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      
-      // Mock response that will trigger validation error
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(invalidLabelPreviewData),
-      } as Response);
-
-      const labelData = {
-        data: {
-          text: 'Test Label',
-          shouldPrintFullLabel: true,
-          shouldPrintSmallLabel: true
-        }
-      };
-
-      const result = await LabelBroAPI.fetchLabelPreviews(labelData);
-      
-      // Should handle gracefully and log validation errors
-      expect(result).toBeDefined();
-      
-      consoleLogSpy.mockRestore();
-    });
   });
 });

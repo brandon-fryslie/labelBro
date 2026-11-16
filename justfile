@@ -23,7 +23,7 @@ dev:
     # Check if TypeScript dependencies are installed  
     if [ ! -d "node_modules" ]; then
         echo -e "${YELLOW}⚠️  Node modules not found. Installing TypeScript dependencies...${NC}"
-        npm install
+        pnpm install
         echo -e "${GREEN}✅ TypeScript dependencies installed${NC}"
     fi
     
@@ -47,7 +47,7 @@ dev:
     # Start the Vite dev server in background
     (
         echo -e "${BLUE}[Vite]${NC} Starting the Vite dev server..."
-        npm run dev 2>&1 | while IFS= read -r line; do
+        pnpm dev 2>&1 | while IFS= read -r line; do
             echo -e "${BLUE}[Vite]${NC} $line"
         done
     ) &
@@ -71,12 +71,12 @@ server:
 # Run the Vite dev server only (needs `just server` for /api)
 watch:
     @echo "📝 Starting the Vite dev server on http://localhost:5173..."
-    npm run dev
+    pnpm dev
 
 # Type check TypeScript without watching
 typecheck:
     @echo "🔍 Type checking TypeScript..."
-    npm run typecheck
+    pnpm typecheck
 
 # Install all dependencies
 install:
@@ -85,7 +85,7 @@ install:
     echo "📦 Installing Python dependencies..."
     uv sync --extra dev
     echo "📦 Installing TypeScript dependencies..."
-    npm install
+    pnpm install
     echo "✅ All dependencies installed"
 
 # Setup development environment
@@ -110,20 +110,20 @@ test:
     @echo "🧪 Running Python tests..."
     uv run --extra dev pytest
     @echo "🔍 Running TypeScript type checking..."
-    npm run typecheck
+    pnpm typecheck
     @echo "🧪 Running TypeScript/Typia validation tests..."
-    npm test
+    pnpm test
     @echo "✅ All tests passed"
 
 # Run TypeScript tests only
 test-ts:
     @echo "🧪 Running TypeScript tests with Typia validation..."
-    npm test
+    pnpm test
 
 # Run TypeScript tests in watch mode
 test-watch:
     @echo "🧪 Running TypeScript tests in watch mode..."
-    npm run test:watch
+    pnpm test:watch
 
 # Show project status
 status:
@@ -131,8 +131,8 @@ status:
     @echo "========================="
     @echo "Python version: $(python3 --version)"
     @echo "Node version: $(node --version 2>/dev/null || echo 'Not installed')"
-    @echo "NPM version: $(npm --version 2>/dev/null || echo 'Not installed')"
-    @echo "TypeScript: $(npx tsc --version 2>/dev/null || echo 'Not installed')"
+    @echo "pnpm version: $(pnpm --version 2>/dev/null || echo 'Not installed')"
+    @echo "TypeScript: $(pnpm exec tsc --version 2>/dev/null || echo 'Not installed')"
     @echo ""
     @echo "Dependencies:"
     @echo "- Node modules: $([ -d node_modules ] && echo '✅' || echo '❌')"

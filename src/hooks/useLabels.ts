@@ -44,6 +44,8 @@ export function useLabels() {
       addLog('Label previews generated successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate previews';
+      // The last previews belong to other text; showing them beside this error would pass them off as this text's.
+      setLabelPreviews(null);
       setError(errorMessage);
       addLog(`Preview generation failed: ${errorMessage}`);
     } finally {
@@ -71,7 +73,7 @@ export function useLabels() {
         }
       };
 
-      // A failed print rejects (flaskJson), so reaching here means it printed.
+      // [LAW:no-silent-failure] exception: Flask answers 200 even when a label fails to print (labelbro-backend-1k8.my5).
       const result = await LabelBroAPI.printLabels(printRequest);
       addLog('Label printed successfully');
 

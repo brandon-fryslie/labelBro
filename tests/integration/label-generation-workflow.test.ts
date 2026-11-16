@@ -347,25 +347,15 @@ describe('Label Generation Workflow Integration', () => {
     test('should validate preview response data', async () => {
       const textRequest = { text: "Validation Test" };
       
-      // Response with validation issues
       const invalidResponse = {
         full_labels: "should be array", // Wrong type
         small_labels: [123, 456], // Wrong element types
-        error: true // Wrong type - should be string
       };
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve(invalidResponse)
-      } as Response);
+      // Every call answers with it: the validation report's POST to /api/log-frontend-error is a fetch too.
+      mockFetch.mockImplementation(() => Promise.resolve(flaskResponse(invalidResponse)));
 
-      // API should handle validation gracefully 
-      const result = await LabelBroAPI.fetchLabelPreviews(textRequest);
-      
-      // The response may be processed despite validation issues
-      // depending on graceful degradation strategy
-      expect(result).toBeDefined();
+      await expect(LabelBroAPI.fetchLabelPreviews(textRequest)).rejects.toThrow('LabelPreviewData validation failed');
     });
 
     test('should validate print request data before sending', async () => {

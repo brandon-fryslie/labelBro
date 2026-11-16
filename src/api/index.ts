@@ -38,8 +38,17 @@ export class LabelBroAPI {
       body: JSON.stringify(labelData)
     });
 
+    // [LAW:parse-dont-validate] the response is parsed here, at the boundary, so LabelPreview can trust its shape.
     // [LAW:one-source-of-truth] Flask's img_to_base64 already returns each label as a data: URL.
-    return flaskJson(response);
+    const body = await flaskJson(response);
+    try {
+      return TypeValidator.validateLabelPreviewData(body);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        ValidationReporter.reportError(error);
+      }
+      throw error;
+    }
   }
 
   // Fetch current printers with runtime validation
