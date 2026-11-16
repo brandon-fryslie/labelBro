@@ -16,9 +16,7 @@
     "test:coverage": "jest --coverage",
     "test:validation": "jest --testPathPattern=validation",
     "test:integration": "jest --testPathPattern=integration",
-    "test:cross-system": "jest --testPathPattern=cross-system-logging",
-    "test:dev": "node test-dev.js",
-    "test:dev:ci": "node test-dev.js --timeout=30"
+    "test:cross-system": "jest --testPathPattern=cross-system-logging"
   },
   "devDependencies": {
     "@sentry/browser": "^10.8.0",

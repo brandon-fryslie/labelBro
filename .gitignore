@@ -1,7 +1,5 @@
 __pycache__/
 *.py[cod]
-venv/
-.aider*
 .env
 node_modules/
 .DS_Store
@@ -16,5 +14,4 @@ node_modules/
 .tsbuildinfo
 /coverage/
 /test-results/
-/test-dev-report.json
 *.egg-info/
