@@ -129,9 +129,6 @@ brew install libusb
 
 # Make sure the symlink exists
 ln -sf /opt/homebrew/lib ~/lib
-
-# Reinstall pyusb
-uv pip install --force-reinstall pyusb
 ```
 
 ### Printer Discovery Issues

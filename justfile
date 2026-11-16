@@ -20,8 +20,6 @@ dev:
     
     echo -e "${GREEN}🚀 Starting labelBro development environment...${NC}"
     
-    uv sync --extra dev
-
     # Check if TypeScript dependencies are installed  
     if [ ! -d "node_modules" ]; then
         echo -e "${YELLOW}⚠️  Node modules not found. Installing TypeScript dependencies...${NC}"
