@@ -5,6 +5,7 @@ import pytest
 
 from label_bro import app as app_module
 from label_bro.app import app
+from label_bro.utils.printer_utils import PrinterInfo
 
 
 @pytest.fixture
@@ -23,12 +24,13 @@ def test_server_error_returns_message_without_trace(client, caplog, monkeypatch)
 
     assert response.status_code == 500
     assert response.get_json() == {'error': 'cairo fell over'}
-    assert any(r.getMessage().startswith('POST /previewLabels 500 ') for r in caplog.records)
     assert b'Traceback' not in response.data
 
-    [record] = [r for r in caplog.records if r.exc_info]
-    assert 'POST /previewLabels' in record.getMessage()
-    assert isinstance(record.exc_info[1], RuntimeError)
+    # One event for the request, carrying the trace.
+    [event] = [r for r in caplog.records if r.getMessage().startswith('POST /previewLabels ')]
+    assert event.levelno == logging.ERROR
+    assert ' 500 ' in event.getMessage()
+    assert isinstance(event.exc_info[1], RuntimeError)
 
 
 @pytest.mark.parametrize('method, path, status', [
@@ -41,8 +43,10 @@ def test_http_errors_keep_their_status_as_json(client, caplog, method, path, sta
 
     assert response.status_code == status
     assert set(response.get_json()) == {'error'}
-    [event] = [r.getMessage() for r in caplog.records if r.getMessage().startswith(f'{method.upper()} {path} ')]
-    assert f' {status} ' in event
+    [event] = [r for r in caplog.records if r.getMessage().startswith(f'{method.upper()} {path} ')]
+    assert f' {status} ' in event.getMessage()
+    assert event.levelno == logging.INFO
+    assert not event.exc_info
 
 
 def test_method_not_allowed_keeps_allow_header(client):
@@ -63,6 +67,35 @@ def test_startup_autodiscovery_failure_is_logged_with_trace(caplog, monkeypatch)
     [record] = [r for r in caplog.records if r.exc_info]
     assert record.getMessage() == 'Startup autodiscovery failed'
     assert isinstance(record.exc_info[1], OSError)
+
+
+def test_startup_autodiscovery_logs_printer_count(caplog, monkeypatch):
+    printer = PrinterInfo(identifier='tcp://10.0.0.5:9100', model_number='QL-810W',
+                          label_size='62', backend='network', display_name='QL-810W')
+    monkeypatch.setattr(app_module.printer_utils, 'discover_all_printers', lambda: {'net_1': printer})
+
+    with caplog.at_level(logging.INFO, logger=app.logger.name):
+        app_module.run_startup_autodiscovery()
+
+    messages = [r.getMessage() for r in caplog.records]
+    assert 'Startup autodiscovery complete: 1 printers found' in messages
+    assert '  - net_1: QL-810W (network)' in messages
+
+
+def test_manual_connection_registers_ready_printer(client, caplog, monkeypatch):
+    registry = {}
+    monkeypatch.setattr(app_module.printer_utils, '_discovered_printers', registry)
+    monkeypatch.setattr(app_module.printer_utils, 'test_manual_connection', lambda target: {
+        'success': True,
+        'printers_found': [{'ip': '10.0.0.7', 'model': 'QL-800', 'media_loaded': True, 'printer_ready': True}],
+    })
+
+    with caplog.at_level(logging.INFO, logger=app.logger.name):
+        response = client.post('/printers/test', json={'target': '10.0.0.7'})
+
+    assert response.status_code == 200
+    assert registry['manual_10_0_0_7'].identifier == 'tcp://10.0.0.7:9100'
+    assert 'Added manual printer to registry: manual_10_0_0_7' in [r.getMessage() for r in caplog.records]
 
 
 def test_find_available_port_raises_when_range_is_taken():

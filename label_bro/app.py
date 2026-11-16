@@ -9,13 +9,13 @@ import threading
 
 import flask
 from werkzeug.exceptions import HTTPException
+from werkzeug.serving import WSGIRequestHandler
 import io
 import base64
 from label_bro.utils import printer_utils
 from label_bro.utils import label_creation
 
 app = flask.Flask(__name__)
-app.logger.setLevel(logging.INFO)
 
 LABEL_WIDTH = 696
 
@@ -50,9 +50,15 @@ def start_request_clock():
 
 @app.after_request
 def log_request(response):
-    # [LAW:nothing-unseen] one event per request, emitted in the layer every request passes through.
+    # [LAW:nothing-unseen] one event per request, emitted in the layer every request passes through;
+    # an unhandled error rides on that same event as its trace.
+    error = flask.g.pop('unhandled_error', None)
     duration_ms = (time.perf_counter() - flask.g.request_started) * 1000
-    app.logger.info("%s %s %d %.1fms", flask.request.method, flask.request.path, response.status_code, duration_ms)
+    app.logger.log(
+        logging.ERROR if error else logging.INFO,
+        "%s %s %d %.1fms", flask.request.method, flask.request.path, response.status_code, duration_ms,
+        exc_info=error,
+    )
     return response
 
 
@@ -65,8 +71,8 @@ def handle_exception(e):
         response.data = flask.json.dumps({'error': e.description})
         response.content_type = 'application/json'
         return response
-    # [LAW:no-silent-failure] the trace goes to the server log; clients on the LAN get the message only.
-    app.logger.exception("Unhandled error serving %s %s", flask.request.method, flask.request.path)
+    # [LAW:no-silent-failure] the trace goes to the server log (log_request); clients on the LAN get the message only.
+    flask.g.unhandled_error = e
     return flask.jsonify({'error': str(e)}), 500
 
 
@@ -338,11 +344,19 @@ def find_available_port(start_port=5099, max_attempts=100):
     # [LAW:no-silent-failure] phones on the LAN need a predictable port, so a random one is no fallback.
     raise RuntimeError(f"No free port in {start_port}-{start_port + max_attempts - 1}")
 
+
+class AppLoggedRequestHandler(WSGIRequestHandler):
+    # [LAW:one-source-of-truth] log_request in the app emits the per-request event; Werkzeug's access line would be a second.
+    def log_request(self, code='-', size='-'):
+        pass
+
 if __name__ == '__main__':
+    # [LAW:effects-at-boundaries] log levels are the host's choice; this entry point is the host.
+    app.logger.setLevel(logging.INFO)
     # [LAW:effects-at-boundaries] discovery scans the network, so it starts with the server, not on import.
     threading.Thread(target=run_startup_autodiscovery, daemon=True).start()
     port = find_available_port()
-    print(f"Starting server on port {port}")
+    app.logger.info("Starting server on port %d", port)
     # The server binds every interface so phones on the LAN can reach it; the Werkzeug
     # debugger executes arbitrary code, so it is never enabled here.
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False, request_handler=AppLoggedRequestHandler)
