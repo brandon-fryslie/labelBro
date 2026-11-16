@@ -7,6 +7,7 @@ from typing import List, Dict
 import threading
 
 import flask
+from werkzeug.exceptions import HTTPException
 import io
 import base64
 from label_bro.utils import printer_utils
@@ -28,9 +29,6 @@ def run_startup_autodiscovery():
     except Exception as e:
         print(f"⚠️ Startup autodiscovery failed: {e}")
 
-# Start background autodiscovery thread
-startup_thread = threading.Thread(target=run_startup_autodiscovery, daemon=True)
-startup_thread.start()
 
 
 @app.context_processor
@@ -43,19 +41,12 @@ def inject_common_data():
 
 @app.errorhandler(Exception)
 def handle_exception(e):
-    # Get the full stack trace
-    stack_trace = traceback.format_exc()
-
-    # Print stack trace to the console (optional)
-    print(stack_trace)
-
-    # Return a JSON response with the error message and stack trace
-    response = {
-        'error': str(e),
-        'stack_trace': stack_trace
-    }
-
-    return flask.jsonify(response), 500
+    # HTTP errors (404, 405, ...) already carry their own status and response.
+    if isinstance(e, HTTPException):
+        return e
+    # [LAW:no-silent-failure] the trace goes to the server log; clients on the LAN get the message only.
+    app.logger.exception("Unhandled error serving %s %s", flask.request.method, flask.request.path)
+    return flask.jsonify({'error': str(e)}), 500
 
 
 @app.route('/')
@@ -343,10 +334,13 @@ def find_available_port(start_port=5099, max_attempts=100):
     return 0
 
 if __name__ == '__main__':
+    # [LAW:effects-at-boundaries] discovery scans the network, so it starts with the server, not on import.
+    threading.Thread(target=run_startup_autodiscovery, daemon=True).start()
     port = find_available_port()
     if port == 0:
         print("Warning: Using system-assigned port")
-        app.run(host='0.0.0.0', debug=True)
     else:
         print(f"Starting server on port {port}")
-        app.run(host='0.0.0.0', port=port, debug=True)
+    # The server binds every interface so phones on the LAN can reach it; the Werkzeug
+    # debugger executes arbitrary code, so it is never enabled here.
+    app.run(host='0.0.0.0', port=port, debug=False)
