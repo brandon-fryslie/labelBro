@@ -18,9 +18,11 @@ dependencies = [
     "zeroconf>=0.140.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-    "pytest>=7.0.0",
+    "pyright>=1.1.400",
+    "pytest>=8.0.0",
+    "ruff>=0.15.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -31,7 +33,22 @@ include = ["label_bro*"]
 label_bro = ["static/**/*"]
 
 [tool.pytest.ini_options]
-testpaths = ["label_bro/tests", "tests"]
+testpaths = ["label_bro/tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+# [LAW:one-source-of-truth] the rule set lives here, not in whichever defaults the installed ruff ships.
+# BLE, E722, S110 and S112 are the swallowed-exception rules ([LAW:no-silent-failure]).
+select = ["E4", "E7", "E9", "E722", "W", "F", "I", "UP", "B", "BLE", "S110", "S112", "SIM", "PIE", "RUF", "EXE"]
+
+[tool.pyright]
+include = ["label_bro"]
+typeCheckingMode = "standard"
+pythonVersion = "3.11"
+venvPath = "."
+venv = ".venv"

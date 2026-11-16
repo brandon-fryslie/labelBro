@@ -1,13 +1,12 @@
 import base64
 import io
-from typing import Optional, Tuple, Union
 
 import cairo
 
 from label_bro.utils import printer_utils
 
 
-def create_full_width_label_image(text: str, width: int) -> Tuple[Optional[cairo.ImageSurface], Optional[Exception]]:
+def create_full_width_label_image(text: str, width: int) -> cairo.ImageSurface:
     padding = 20
     vertical_padding = 20  # Padding for top and bottom
     line_spacing = 40  # Additional padding between lines
@@ -22,9 +21,7 @@ def create_full_width_label_image(text: str, width: int) -> Tuple[Optional[cairo
     font_size = 10
     total_height = 0
     label_height = 1000  # Initial guess for height to accommodate multiple font sizes
-
-    # Initialize total_text_height with None to detect if it was never properly set
-    total_text_height = None
+    total_text_height = 0
 
     # Calculate the optimal font size
     for size in range(10, 300):  # Assuming the max font size won't exceed 300
@@ -38,9 +35,9 @@ def create_full_width_label_image(text: str, width: int) -> Tuple[Optional[cairo
         max_text_width = 0
         total_text_height = 0  # Reset total_text_height for this iteration
         for word in words:
-            x_bearing, y_bearing, text_width, text_height, x_advance, y_advance = temp_context.text_extents(word)
-            max_text_width = max(max_text_width, text_width)
-            total_text_height += text_height + line_spacing  # Add line spacing between lines
+            extents = temp_context.text_extents(word)
+            max_text_width = max(max_text_width, extents.width)
+            total_text_height += extents.height + line_spacing  # Add line spacing between lines
 
         # Check if the text width exceeds the label width or if the total height becomes too large
         if max_text_width > width - 2 * padding or total_text_height > label_height - 2 * vertical_padding:
@@ -49,9 +46,8 @@ def create_full_width_label_image(text: str, width: int) -> Tuple[Optional[cairo
             font_size = size
             total_height = total_text_height + 2 * vertical_padding  # Including padding
 
-    # If total_text_height was never properly set, throw an error
-    if total_text_height is None or total_text_height == 0:
-        return None, ValueError("Failed to calculate text height. The provided text may not be suitable for the given width.")
+    if total_text_height == 0:
+        raise ValueError("Failed to calculate text height. The provided text may not be suitable for the given width.")
 
     # Round to int
     total_height = int(total_height)
@@ -73,24 +69,17 @@ def create_full_width_label_image(text: str, width: int) -> Tuple[Optional[cairo
 
     # Draw the text centered vertically
     for word in words:
-        x_bearing, y_bearing, text_width, text_height, x_advance, y_advance = context.text_extents(word)
-        x = (width - text_width) / 2
-        context.move_to(x, y + text_height)
+        extents = context.text_extents(word)
+        x = (width - extents.width) / 2
+        context.move_to(x, y + extents.height)
         context.set_source_rgb(0, 0, 0)  # Set text color to black
         context.show_text(word)
-        y += text_height + line_spacing  # Add line spacing after each line
+        y += extents.height + line_spacing  # Add line spacing after each line
 
-    return surface, None
-
-
-import cairo
-from typing import Tuple, Optional
-
-import cairo
-from typing import Tuple, Optional
+    return surface
 
 
-def create_small_label_image(text: str, width: int) -> Tuple[Optional[cairo.ImageSurface], Optional[Exception]]:
+def create_small_label_image(text: str, width: int) -> cairo.ImageSurface:
     initial_font_size = 100
     left_padding = 10  # Left padding as a variable
     vertical_padding = 10  # Vertical padding for both top and bottom
@@ -138,19 +127,15 @@ def create_small_label_image(text: str, width: int) -> Tuple[Optional[cairo.Imag
     context.show_text(text)
     context.stroke()
 
-    # Return the surface
-    return surface, None
+    return surface
 
 
 # Two label types: small and full (small = single line, full = full width)
-def process_label(text: str, width: int, label_type: str, printer_id: str) -> Optional[Union[Exception, dict]]:
-    if label_type == 'full':
-        image, error = create_full_width_label_image(text, width)
+def process_label(text: str, width: int, label_type: str, printer_id: str) -> dict:
+    if label_type == "full":
+        image = create_full_width_label_image(text, width)
     else:
-        image, error = create_small_label_image(text, width)
-
-    if error:
-        return error
+        image = create_small_label_image(text, width)
 
     instructions = printer_utils.convert_image_to_instructions(image, printer_id)
     return printer_utils.send_instructions(instructions, printer_id)
@@ -160,17 +145,5 @@ def img_to_base64(surface: cairo.ImageSurface) -> str:
     buffer = io.BytesIO()
     surface.write_to_png(buffer)
     buffer.seek(0)
-    img_str = base64.b64encode(buffer.getvalue()).decode('utf-8')
-    return f'data:image/png;base64,{img_str}'
-
-
-def str_to_bool(s: str) -> bool:
-    truthy = ['true', '1', 'yes', 'y', 'on']
-    falsy = ['false', '0', 'no', 'n', 'off']
-    lower_s = s.lower()
-    if lower_s in truthy:
-        return True
-    if lower_s in falsy:
-        return False
-
-    raise ValueError(f"Invalid value {s}")
+    img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    return f"data:image/png;base64,{img_str}"

@@ -83,7 +83,7 @@ install:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "📦 Installing Python dependencies..."
-    uv sync --extra dev
+    uv sync
     echo "📦 Installing TypeScript dependencies..."
     pnpm install
     echo "✅ All dependencies installed"
@@ -108,7 +108,7 @@ clean:
 # Run tests
 test:
     @echo "🧪 Running Python tests..."
-    uv run --extra dev pytest
+    uv run pytest
     @echo "🔍 Running TypeScript type checking..."
     pnpm typecheck
     @echo "🧪 Running TypeScript/Typia validation tests..."
