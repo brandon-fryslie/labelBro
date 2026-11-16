@@ -19,7 +19,8 @@ app = flask.Flask(__name__)
 
 LABEL_WIDTH = 696
 
-# [LAW:one-source-of-truth] base.html loads this path and startup requires it; it is `pnpm build` output, not committed.
+# The `pnpm build` output (not committed) under the static folder; base.html loads it and index() requires it.
+# It must match the build's outfile in build-with-error-reporting.js.
 FRONTEND_BUNDLE = 'js/bundle.js'
 
 # Background autodiscovery on server startup
@@ -82,6 +83,10 @@ def handle_exception(e):
 
 @app.route('/')
 def index():
+    bundle = os.path.join(app.static_folder, FRONTEND_BUNDLE)
+    if not os.path.isfile(bundle):
+        # [LAW:no-silent-failure] without the bundle the page renders blank; the browser and the server log get the fix instead.
+        raise RuntimeError(f"Frontend bundle not found at {bundle}; run `pnpm install && pnpm build`")
     return flask.render_template(
         'index.html',
         custom_message="Yo. I'm your label Bro. Fist bump Bro."
@@ -349,14 +354,6 @@ def find_available_port(start_port=5099, max_attempts=100):
     raise RuntimeError(f"No free port in {start_port}-{start_port + max_attempts - 1}")
 
 
-def require_frontend_bundle(static_folder):
-    """Stop startup when the frontend bundle has not been built"""
-    bundle = os.path.join(static_folder, FRONTEND_BUNDLE)
-    if not os.path.isfile(bundle):
-        # [LAW:no-silent-failure] without the bundle every page renders blank, so the server refuses to start.
-        raise SystemExit(f"Frontend bundle not found at {bundle}; run `pnpm install && pnpm build` first")
-
-
 class AppLoggedRequestHandler(WSGIRequestHandler):
     # [LAW:one-source-of-truth] log_request in the app emits the per-request event; Werkzeug's access line would be a second.
     def log_request(self, code='-', size='-'):
@@ -365,7 +362,6 @@ class AppLoggedRequestHandler(WSGIRequestHandler):
 if __name__ == '__main__':
     # [LAW:effects-at-boundaries] log levels are the host's choice; this entry point is the host.
     app.logger.setLevel(logging.INFO)
-    require_frontend_bundle(app.static_folder)
     # [LAW:effects-at-boundaries] discovery scans the network, so it starts with the server, not on import.
     threading.Thread(target=run_startup_autodiscovery, daemon=True).start()
     port = find_available_port()

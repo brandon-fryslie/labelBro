@@ -108,20 +108,24 @@ def test_find_available_port_raises_when_range_is_taken():
             app_module.find_available_port(start_port=taken, max_attempts=1)
 
 
-def test_startup_refuses_to_run_without_frontend_bundle(tmp_path):
-    with pytest.raises(SystemExit, match='run `pnpm install && pnpm build` first'):
-        app_module.require_frontend_bundle(str(tmp_path))
+
+def test_index_without_frontend_bundle_names_the_build_command(client, caplog, monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'static_folder', str(tmp_path))
+
+    with caplog.at_level(logging.ERROR):
+        response = client.get('/')
+
+    assert response.status_code == 500
+    assert 'run `pnpm install && pnpm build`' in response.get_json()['error']
+    assert 'GET / 500' in caplog.text
 
 
-def test_startup_accepts_built_frontend_bundle(tmp_path):
+def test_index_loads_the_frontend_bundle(client, monkeypatch, tmp_path):
     bundle = tmp_path / app_module.FRONTEND_BUNDLE
     bundle.parent.mkdir()
     bundle.write_text('')
+    monkeypatch.setattr(app, 'static_folder', str(tmp_path))
 
-    app_module.require_frontend_bundle(str(tmp_path))
-
-
-def test_index_loads_the_frontend_bundle(client):
     page = client.get('/').get_data(as_text=True)
 
     assert f'/static/{app_module.FRONTEND_BUNDLE}' in page
