@@ -310,7 +310,6 @@ npm run test:coverage  # Includes fixture coverage analysis
 - **[Type Definitions](../../src/types/index.ts)** - TypeScript interfaces
 - **[Validation Rules](../../src/validation/index.ts)** - Data validation logic
 - **[Test Utilities](../utils/test-utils.tsx)** - Testing helper functions
-- **[Coverage Analysis](../COVERAGE_VALIDATION_REPORT.md)** - Test coverage insights
 
 ---
 

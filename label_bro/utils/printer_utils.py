@@ -773,7 +773,7 @@ def discover_all_printers() -> Dict[str, PrinterInfo]:
     # Get network ranges for discovery
     ranges = get_local_network_ranges()
 
-    # Discover network printers using proper hierarchy per PROJECT.md specifications
+    # Discover network printers in priority order
     try:
         all_network_printers = []
         print(f"Starting network printer discovery across {len(ranges)} network ranges...")
@@ -809,7 +809,7 @@ def discover_all_printers() -> Dict[str, PrinterInfo]:
         else:
             print("Phase 4: Network Port Scanning... (skipped - other methods found printers)")
 
-        # Deduplicate and verify printers with media detection per PROJECT.md
+        # Deduplicate and verify printers with media detection
         print(f"Verifying {len(all_network_printers)} discovered printers...")
         seen_ips = set()
         verified_printers = []
@@ -827,7 +827,7 @@ def discover_all_printers() -> Dict[str, PrinterInfo]:
                 print(f"  {ip}: Not responding - skipping")
                 continue
 
-            # Media Detection: Verify printer has media loaded (PROJECT.md requirement)
+            # Media Detection: Verify printer has media loaded
             media_info = get_printer_media_info(ip, port, timeout=2.0)
             if media_info and media_info.get('is_brother'):
                 # Check if media is loaded and printer is ready

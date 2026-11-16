@@ -14,9 +14,7 @@ with any printer supported by this library: https://github.com/pklaus/brother_ql
 
 ## Usage
 
-### Python Setup with uv (Recommended)
-
-The modern and fastest way to set up Python dependencies is using `uv`. This replaces the need for `pip`, `venv`, and `pyenv`.
+Python dependencies are managed by `uv` from `pyproject.toml`; frontend dependencies by `pnpm` from `package.json`.
 
 ```shell
 cd <repo>
@@ -30,8 +28,8 @@ brew install cairo libusb
 # Symlink brew libs (required for pycairo and pyusb)
 ln -s /opt/homebrew/lib ~/lib
 
-# Create virtual environment and install all dependencies
-uv sync
+# Create the virtual environment (.venv) and install all dependencies
+uv sync --extra dev
 
 # Install Node and pnpm if you don't have them (pnpm uses the version pinned in package.json)
 brew install node pnpm
@@ -41,134 +39,83 @@ pnpm install
 pnpm build
 
 # Run the app
-uv run python label_bro/app.py
-
-# Or run with proper module path
 uv run python -m label_bro.app
-```
-
-### Legacy Setup (venv + pip)
-
-If you prefer the traditional approach:
-
-```shell
-cd <repo>
-
-# make a venv
-python3 -m venv venv
-
-# activate venv
-. ./venv/bin/activate
-
-# install brew dependencies
-brew install cairo libusb
-
-# symlink brew libs
-ln -s /opt/homebrew/lib ~/lib
-
-# install python dependencies from pyproject.toml
-pip install -e .
-
-# build the frontend bundle (not committed)
-pnpm install
-pnpm build
-
-# run the app
-python3 -m label_bro.app
-```
-
-### Development
-
-For development work, install with dev dependencies:
-
-```shell
-# Using uv (recommended)
-uv sync --group dev
-
-# Or using pip
-pip install -e ".[dev]"
-```
-
-### Running Tests
-
-```shell
-# Using uv
-uv run pytest
-
-# Or using pip/venv
-pytest
 ```
 
 You will see some text like this:
  * Running on all addresses (0.0.0.0)
- * Running on http://127.0.0.1:5100
- * Running on http://192.168.1.100:5100
+ * Running on http://127.0.0.1:5099
+ * Running on http://192.168.1.100:5099
 
-Then browse to the local address.  That being said, you can also browse to the network address from another device to use the application from a phone, ipad, etc.
+The server takes the first free port from 5099 up.  Browse to the local address.  You can also browse to the network
+address from another device to use the application from a phone, ipad, etc.
 
-## Notes
+### Writing labels
 
-### Connection
-
-When you run the app, it will:
-- Automatically discover Brother printers on your network using mDNS/Bonjour
-- Show available printers in the web interface
-- Allow you to connect and print labels
-
-### Label Templates
-
-The application supports:
-- Text labels with various fonts and sizes
-- Multiple label formats (small and full-width)
-- Live preview before printing
-- Label history
-
-### Network Discovery
-
-The app uses multiple discovery methods:
-- mDNS/Bonjour for automatic discovery
-- Network scanning for manual discovery
-- Direct IP connection option
-
-### Compatibility
-
-- Tested with Brother QL-800 and QL-720NW printers
-- Uses 62mm label tape by default
-- Should work with other Brother QL series printers
-
-### API
-
-The Flask backend provides these endpoints:
-- `/printers` - List connected printers
-- `/printers/discover` - Discover new printers
-- `/previewLabels` - Generate label previews
-- `/printLabels` - Print labels to selected printer
+- Each line in the textarea becomes a separate label, previewed live as you type.
+- `My Label; 5` prints 5 copies of "My Label".
+- Checkboxes pick the label type: full-width (text split across lines in Impact), small (one line, font sized to
+  fit), or both.
+- Labels are 62mm wide (696px at printer resolution).
 
 ## Development
 
 This project uses:
-- **Backend**: Python Flask with Brother QL library
+- **Backend**: Python Flask with the brother_ql library; labels rendered with Cairo (pycairo)
 - **Frontend**: React with TypeScript
-- **Build**: Vite for frontend bundling
+- **Build**: esbuild, driven by `build-with-error-reporting.js`
 - **Package Management**: uv for Python, pnpm for Node.js
 - **Testing**: Jest for frontend, pytest for backend
 
-### Building the Frontend
+### Running Tests
 
 ```shell
-pnpm install
-pnpm build
+uv run --extra dev pytest
+pnpm test
 ```
 
 ### Running in Development Mode
 
 ```shell
 # Terminal 1: Start Flask backend
-uv run python label_bro/app.py
+uv run python -m label_bro.app
 
-# Terminal 2: Start frontend development server
+# Terminal 2: Rebuild the bundle and type-check on every change
 pnpm dev
 ```
+
+## Notes
+
+### Printer Discovery
+
+Discovery runs when the server starts and on demand from the UI.  In order:
+- USB: a Brother printer connected over USB
+- SNMP broadcast on the local network
+- Port 9100 probe of the local network ranges, when the SNMP broadcast finds fewer than two printers
+- mDNS/Bonjour
+- Port 9100 scan, only when none of the network methods above found a printer
+
+A network printer is listed only if it answers on its port and identifies as a Brother printer.  One with no media
+loaded, or not ready, is still listed, flagged with those issues.  The UI can also test a specific IP address or subnet
+directly.
+
+### Compatibility
+
+- Tested with Brother QL-800 and QL-720NW printers
+- Uses 62mm label tape by default
+- Should work with other Brother QL series printers
+- The printer must be powered on to print
+
+### API
+
+The Flask backend provides these endpoints:
+- `GET /` - Main web interface
+- `GET /printers` - List discovered printers
+- `POST /printers/discover` - Run printer discovery
+- `POST /printers/test` - Test a manual connection to an IP or subnet
+- `POST /previewLabels` - Generate label previews
+- `POST /printLabels` - Print labels to the selected printer
+- `POST /log-frontend-error` - Record a frontend error in the server log
 
 ## Troubleshooting
 
@@ -182,9 +129,6 @@ brew install libusb
 
 # Make sure the symlink exists
 ln -sf /opt/homebrew/lib ~/lib
-
-# Reinstall pyusb
-uv pip install --force-reinstall pyusb
 ```
 
 ### Printer Discovery Issues
@@ -194,19 +138,9 @@ uv pip install --force-reinstall pyusb
 3. Try the manual IP connection option
 4. Restart the printer if it's not appearing
 
-### Modern Python Required
+### Python Version
 
-This application requires Python 3.11 or newer. If you're using an older Python:
-
-```shell
-# Install uv (which handles Python versions automatically)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# uv will automatically use the correct Python version
-uv sync
-```
-
-It is not recommended you use system Python or older versions. Use `uv` for the best experience.
+This application requires Python 3.11 or newer.  `uv sync` picks a matching Python automatically.
 
 ## Project Structure
 
@@ -221,15 +155,8 @@ label_bro/
 │   ├── components/     # React components
 │   ├── hooks/          # Custom React hooks
 │   └── api/           # API client
-├── tests/              # Test files
+├── tests/              # Frontend tests
 ├── pyproject.toml      # Python dependencies and metadata
 ├── package.json        # Node.js dependencies
-├── vite.config.ts      # Frontend build configuration
 └── README.md          # This file
 ```
-
-The key files are:
-- pyproject.toml (Python dependencies managed by uv)
-- package.json (Node.js dependencies)
-- label_bro/app.py (main Flask application)
-- src/components/App.tsx (main React component)

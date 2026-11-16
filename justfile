@@ -20,21 +20,6 @@ dev:
     
     echo -e "${GREEN}🚀 Starting labelBro development environment...${NC}"
     
-    # Check if venv exists, create if not
-    if [ ! -d "venv" ]; then
-        echo -e "${YELLOW}⚠️  Virtual environment not found. Creating venv...${NC}"
-        python3 -m venv venv
-        echo -e "${GREEN}✅ Virtual environment created${NC}"
-    fi
-    
-    # Activate venv and check if Flask is installed
-    source venv/bin/activate
-    if ! python3 -c "import flask" 2>/dev/null; then
-        echo -e "${YELLOW}⚠️  Flask not found. Installing Python dependencies...${NC}"
-        python3 -m pip install -r requirements.txt
-        echo -e "${GREEN}✅ Python dependencies installed${NC}"
-    fi
-    
     # Check if TypeScript dependencies are installed  
     if [ ! -d "node_modules" ]; then
         echo -e "${YELLOW}⚠️  Node modules not found. Installing TypeScript dependencies...${NC}"
@@ -70,11 +55,10 @@ dev:
     # Give TypeScript watcher a moment to start
     sleep 1
     
-    # Start Python server in background (with venv activated)
+    # Start Python server in background
     (
         echo -e "${GREEN}[Python]${NC} Starting Flask development server..."
-        source venv/bin/activate
-        python3 -m label_bro.app 2>&1 | while IFS= read -r line; do
+        uv run python3 -m label_bro.app 2>&1 | while IFS= read -r line; do
             echo -e "${GREEN}[Python]${NC} $line"
         done
     ) &
@@ -85,7 +69,7 @@ dev:
 # Run Python server only
 server:
     @echo "🐍 Starting Python server..."
-    source venv/bin/activate && python3 -m label_bro.app
+    uv run python3 -m label_bro.app
 
 # Run TypeScript development (type checking + compilation) only  
 watch:
@@ -101,13 +85,8 @@ typecheck:
 install:
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "📦 Setting up virtual environment..."
-    if [ ! -d "venv" ]; then
-        python3 -m venv venv
-        echo "✅ Virtual environment created"
-    fi
     echo "📦 Installing Python dependencies..."
-    source venv/bin/activate && python3 -m pip install -r requirements.txt
+    uv sync --extra dev
     echo "📦 Installing TypeScript dependencies..."
     npm install
     echo "✅ All dependencies installed"
@@ -132,7 +111,7 @@ clean:
 # Run tests
 test:
     @echo "🧪 Running Python tests..."
-    source venv/bin/activate && python3 -m label_bro.tests.test_cli
+    uv run --extra dev pytest
     @echo "🔍 Running TypeScript type checking..."
     npm run typecheck
     @echo "🧪 Running TypeScript/Typia validation tests..."
@@ -169,7 +148,6 @@ status:
     @echo "TypeScript: $(npx tsc --version 2>/dev/null || echo 'Not installed')"
     @echo ""
     @echo "Dependencies:"
-    @echo "- Python requirements: $([ -f requirements.txt ] && echo '✅' || echo '❌')"
     @echo "- Node modules: $([ -d node_modules ] && echo '✅' || echo '❌')"
     @echo "- TypeScript config: $([ -f tsconfig.json ] && echo '✅' || echo '❌')"
     @echo ""
