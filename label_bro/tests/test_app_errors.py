@@ -17,118 +17,158 @@ def test_server_error_returns_message_without_trace(client, caplog, monkeypatch)
     def explode(text, width):
         raise RuntimeError("cairo fell over")
 
-    monkeypatch.setattr(app_module.label_creation, 'create_full_width_label_image', explode)
+    monkeypatch.setattr(app_module.label_creation, "create_full_width_label_image", explode)
 
     with caplog.at_level(logging.INFO, logger=app.logger.name):
-        response = client.post('/api/previewLabels', json={'data': {'text': 'hello'}})
+        response = client.post("/api/previewLabels", json={"data": {"text": "hello"}})
 
     assert response.status_code == 500
-    assert response.get_json() == {'error': 'cairo fell over'}
-    assert b'Traceback' not in response.data
+    assert response.get_json() == {"error": "cairo fell over"}
+    assert b"Traceback" not in response.data
 
     # One event for the request, carrying the trace.
-    [event] = [r for r in caplog.records if r.getMessage().startswith('POST /api/previewLabels ')]
+    [event] = [r for r in caplog.records if r.getMessage().startswith("POST /api/previewLabels ")]
     assert event.levelno == logging.ERROR
-    assert ' 500 ' in event.getMessage()
+    assert " 500 " in event.getMessage()
     assert isinstance(event.exc_info[1], RuntimeError)
 
 
-@pytest.mark.parametrize('method, path, status', [
-    ('get', '/no-such-route', 404),
-    ('get', '/api/printers/discover', 405),
-])
+@pytest.mark.parametrize(
+    "method, path, status",
+    [
+        ("get", "/no-such-route", 404),
+        ("get", "/api/printers/discover", 405),
+    ],
+)
 def test_http_errors_keep_their_status_as_json(client, caplog, method, path, status):
     with caplog.at_level(logging.INFO, logger=app.logger.name):
         response = getattr(client, method)(path)
 
     assert response.status_code == status
-    assert set(response.get_json()) == {'error'}
-    [event] = [r for r in caplog.records if r.getMessage().startswith(f'{method.upper()} {path} ')]
-    assert f' {status} ' in event.getMessage()
+    assert set(response.get_json()) == {"error"}
+    [event] = [r for r in caplog.records if r.getMessage().startswith(f"{method.upper()} {path} ")]
+    assert f" {status} " in event.getMessage()
     assert event.levelno == logging.INFO
     assert not event.exc_info
 
 
 def test_method_not_allowed_keeps_allow_header(client):
-    response = client.get('/api/printers/discover')
+    response = client.get("/api/printers/discover")
 
-    assert set(response.headers['Allow'].split(', ')) == {'OPTIONS', 'POST'}
+    assert set(response.headers["Allow"].split(", ")) == {"OPTIONS", "POST"}
 
 
 def test_startup_autodiscovery_failure_is_logged_with_trace(caplog, monkeypatch):
     def explode():
         raise OSError("zeroconf unavailable")
 
-    monkeypatch.setattr(app_module.printer_utils, 'discover_all_printers', explode)
+    monkeypatch.setattr(app_module.printer_utils, "discover_all_printers", explode)
 
     with caplog.at_level(logging.ERROR, logger=app.logger.name):
         app_module.run_startup_autodiscovery()
 
     [record] = [r for r in caplog.records if r.exc_info]
-    assert record.getMessage() == 'Startup autodiscovery failed'
+    assert record.getMessage() == "Startup autodiscovery failed"
     assert isinstance(record.exc_info[1], OSError)
 
 
 def test_startup_autodiscovery_logs_printer_count(caplog, monkeypatch):
-    printer = PrinterInfo(identifier='tcp://10.0.0.5:9100', model_number='QL-810W',
-                          label_size='62', backend='network', display_name='QL-810W')
-    monkeypatch.setattr(app_module.printer_utils, 'discover_all_printers', lambda: {'net_1': printer})
+    printer = PrinterInfo(
+        identifier="tcp://10.0.0.5:9100",
+        model_number="QL-810W",
+        label_size="62",
+        backend="network",
+        display_name="QL-810W",
+    )
+    monkeypatch.setattr(app_module.printer_utils, "discover_all_printers", lambda: {"net_1": printer})
 
     with caplog.at_level(logging.INFO, logger=app.logger.name):
         app_module.run_startup_autodiscovery()
 
     messages = [r.getMessage() for r in caplog.records]
-    assert 'Startup autodiscovery complete: 1 printers found' in messages
-    assert '  - net_1: QL-810W (network)' in messages
+    assert "Startup autodiscovery complete: 1 printers found" in messages
+    assert "  - net_1: QL-810W (network)" in messages
 
 
 def test_manual_connection_registers_ready_printer(client, caplog, monkeypatch):
     registry = {}
-    monkeypatch.setattr(app_module.printer_utils, '_discovered_printers', registry)
-    monkeypatch.setattr(app_module.printer_utils, 'test_manual_connection', lambda target: {
-        'success': True,
-        'printers_found': [{'ip': '10.0.0.7', 'model': 'QL-800', 'media_loaded': True, 'printer_ready': True}],
-    })
+    monkeypatch.setattr(app_module.printer_utils, "_discovered_printers", registry)
+    monkeypatch.setattr(
+        app_module.printer_utils,
+        "test_manual_connection",
+        lambda target: {
+            "success": True,
+            "printers_found": [{"ip": "10.0.0.7", "model": "QL-800", "media_loaded": True, "printer_ready": True}],
+        },
+    )
 
     with caplog.at_level(logging.INFO, logger=app.logger.name):
-        response = client.post('/api/printers/test', json={'target': '10.0.0.7'})
+        response = client.post("/api/printers/test", json={"target": "10.0.0.7"})
 
     assert response.status_code == 200
-    assert registry['manual_10_0_0_7'].identifier == 'tcp://10.0.0.7:9100'
-    assert 'Added manual printer to registry: manual_10_0_0_7' in [r.getMessage() for r in caplog.records]
+    assert registry["manual_10_0_0_7"].identifier == "tcp://10.0.0.7:9100"
+    assert "Added manual printer to registry: manual_10_0_0_7" in [r.getMessage() for r in caplog.records]
+
+
+def test_print_labels_with_only_blank_lines_prints_nothing(client, monkeypatch):
+    printer = PrinterInfo(
+        identifier="tcp://10.0.0.5:9100",
+        model_number="QL-810W",
+        label_size="62",
+        backend="network",
+        display_name="QL-810W",
+        is_connected=True,
+    )
+    monkeypatch.setattr(app_module.printer_utils, "_discovered_printers", {"net_1": printer})
+
+    def no_print(*args):
+        raise AssertionError("no label should be printed")
+
+    monkeypatch.setattr(app_module.label_creation, "process_label", no_print)
+
+    response = client.post("/api/printLabels", json={"data": {"text": "\n  \n", "printer_id": "net_1"}})
+
+    assert response.status_code == 200
+    assert response.get_json() == {"status": []}
 
 
 def test_find_available_port_raises_when_range_is_taken():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as held:
-        held.bind(('0.0.0.0', 0))
+        held.bind(("0.0.0.0", 0))
         held.listen()
         taken = held.getsockname()[1]
 
-        with pytest.raises(RuntimeError, match=f'^No free port in {taken}-{taken}$'):
+        with pytest.raises(RuntimeError, match=f"^No free port in {taken}-{taken}$"):
             app_module.find_available_port(start_port=taken, max_attempts=1)
 
 
-
 def test_index_without_frontend_build_names_the_build_command(client, caplog, monkeypatch, tmp_path):
-    monkeypatch.setattr(app, 'static_folder', str(tmp_path))
+    monkeypatch.setattr(app_module, "STATIC_DIR", tmp_path)
 
     with caplog.at_level(logging.ERROR):
-        response = client.get('/')
+        response = client.get("/")
 
     assert response.status_code == 500
-    error = response.get_json()['error']
-    assert 'run `pnpm install && pnpm build`' in error
+    error = response.get_json()["error"]
+    assert "run `pnpm install && pnpm build`" in error
     assert str(tmp_path) not in error
-    assert 'GET / 500' in caplog.text
+    assert "GET / 500" in caplog.text
 
 
 def test_index_serves_the_built_page(client, monkeypatch, tmp_path):
     page = tmp_path / app_module.FRONTEND_INDEX
     page.parent.mkdir()
     page.write_text('<div id="react-root"></div>')
-    monkeypatch.setattr(app, 'static_folder', str(tmp_path))
+    monkeypatch.setattr(app_module, "STATIC_DIR", tmp_path)
 
-    response = client.get('/')
+    response = client.get("/")
 
     assert response.status_code == 200
     assert response.get_data(as_text=True) == '<div id="react-root"></div>'
+
+
+def test_preview_of_a_word_too_wide_for_the_label_names_the_cause(client):
+    response = client.post("/api/previewLabels", json={"data": {"text": "W" * 300, "shouldPrintSmallLabel": False}})
+
+    assert response.status_code == 500
+    assert "not be suitable for the given width" in response.get_json()["error"]

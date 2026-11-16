@@ -1,31 +1,32 @@
-import os
-import sys
-import socket
 import logging
+import socket
+import sys
+import threading
 import time
 from datetime import datetime
-from typing import List, Dict
-import threading
+from pathlib import Path
+from typing import cast
 
 import flask
 from werkzeug.exceptions import HTTPException
 from werkzeug.serving import WSGIRequestHandler
-import io
-import base64
-from label_bro.utils import printer_utils
-from label_bro.utils import label_creation
+from werkzeug.wrappers import Response
 
-app = flask.Flask(__name__)
+from label_bro.utils import label_creation, printer_utils
+
+STATIC_DIR = Path(__file__).parent / "static"
+app = flask.Flask(__name__, static_folder=STATIC_DIR)
 
 LABEL_WIDTH = 696
 
 # The page `pnpm build` writes (not committed) under the static folder, with its assets beside it; index() serves it.
 # It must match build.outDir and the build base in vite.config.ts.
-FRONTEND_INDEX = 'dist/index.html'
+FRONTEND_INDEX = "dist/index.html"
 
 # [LAW:one-source-of-truth] every JSON route lives under one prefix (API_PREFIX in src/api/endpoints.ts),
 # so the Vite dev server proxies the prefix instead of a copy of this route table.
-api = flask.Blueprint('api', __name__, url_prefix='/api')
+api = flask.Blueprint("api", __name__, url_prefix="/api")
+
 
 # Background autodiscovery on server startup
 def run_startup_autodiscovery():
@@ -42,7 +43,6 @@ def run_startup_autodiscovery():
         app.logger.info("  - %s: %s (%s)", printer_id, printer_info.model_number, printer_info.backend)
 
 
-
 @app.before_request
 def start_request_clock():
     flask.g.request_started = time.perf_counter()
@@ -52,11 +52,15 @@ def start_request_clock():
 def log_request(response):
     # [LAW:nothing-unseen] one event per request, emitted in the layer every request passes through;
     # an unhandled error rides on that same event as its trace.
-    error = flask.g.pop('unhandled_error', None)
+    error = flask.g.pop("unhandled_error", None)
     duration_ms = (time.perf_counter() - flask.g.request_started) * 1000
     app.logger.log(
         logging.ERROR if error else logging.INFO,
-        "%s %s %d %.1fms", flask.request.method, flask.request.path, response.status_code, duration_ms,
+        "%s %s %d %.1fms",
+        flask.request.method,
+        flask.request.path,
+        response.status_code,
+        duration_ms,
         exc_info=error,
     )
     return response
@@ -67,102 +71,107 @@ def handle_exception(e):
     # HTTP errors (400, 404, 405, ...) keep their status and headers (Allow, ...);
     # only the body becomes JSON, because the frontend reads every response as JSON.
     if isinstance(e, HTTPException):
-        response = e.get_response()
-        response.data = flask.json.dumps({'error': e.description})
-        response.content_type = 'application/json'
+        # get_response() always builds a wrappers.Response (werkzeug/exceptions.py); its annotation is the sansio base.
+        response = cast(Response, e.get_response())
+        response.set_data(flask.json.dumps({"error": e.description}))
+        response.content_type = "application/json"
         return response
     # [LAW:no-silent-failure] the trace goes to the server log (log_request); clients on the LAN get the message only.
     flask.g.unhandled_error = e
-    return flask.jsonify({'error': str(e)}), 500
+    return flask.jsonify({"error": str(e)}), 500
 
 
-@app.route('/')
+@app.route("/")
 def index():
-    if not os.path.isfile(os.path.join(app.static_folder, FRONTEND_INDEX)):
+    if not (STATIC_DIR / FRONTEND_INDEX).is_file():
         # [LAW:no-silent-failure] without the build there is no page; the browser and the server log get the fix instead.
         raise RuntimeError(f"Frontend static/{FRONTEND_INDEX} not built; run `pnpm install && pnpm build`")
-    return flask.send_from_directory(app.static_folder, FRONTEND_INDEX)
+    return flask.send_from_directory(STATIC_DIR, FRONTEND_INDEX)
 
 
-@api.route('/printers', methods=['GET'])
+@api.route("/printers", methods=["GET"])
 def get_printers():
     """Get cached printers from startup autodiscovery without re-running discovery"""
     # Use the global printer registry populated at startup
     from label_bro.utils.printer_utils import _discovered_printers
 
-    return flask.jsonify({
-        'printers': {
-            printer_id: {
-                'id': printer_id,
-                'display_name': info.display_name,
-                'model_number': info.model_number,
-                'backend': info.backend,
-                'is_connected': info.is_connected,
-                'media_info': info.media_info,
-                'identifier': info.identifier
+    return flask.jsonify(
+        {
+            "printers": {
+                printer_id: {
+                    "id": printer_id,
+                    "display_name": info.display_name,
+                    "model_number": info.model_number,
+                    "backend": info.backend,
+                    "is_connected": info.is_connected,
+                    "media_info": info.media_info,
+                    "identifier": info.identifier,
+                }
+                for printer_id, info in _discovered_printers.items()
             }
-            for printer_id, info in _discovered_printers.items()
         }
-    }), 200
+    ), 200
 
 
-@api.route('/printers/discover', methods=['POST'])
+@api.route("/printers/discover", methods=["POST"])
 def discover_printers():
     """Discover all printers including network auto-discovery"""
     printers = printer_utils.discover_all_printers()
-    return flask.jsonify({
-        'printers': {
-            printer_id: {
-                'id': printer_id,
-                'display_name': info.display_name,
-                'model': info.model_number,
-                'backend': info.backend,
-                'is_connected': info.is_connected,
-                'media_info': info.media_info,
-                'identifier': info.identifier
-            }
-            for printer_id, info in printers.items()
-        },
-        'discovery_methods': {
-            'snmp_broadcast': True,  # quicksnmp module available
-            'snmp_targeted': True,   # quicksnmp module available
-            'mdns': True,           # zeroconf module available
-            'network_scan': True,   # built-in socket scanning
-            'usb': True            # brother_ql USB support
+    return flask.jsonify(
+        {
+            "printers": {
+                printer_id: {
+                    "id": printer_id,
+                    "display_name": info.display_name,
+                    "model": info.model_number,
+                    "backend": info.backend,
+                    "is_connected": info.is_connected,
+                    "media_info": info.media_info,
+                    "identifier": info.identifier,
+                }
+                for printer_id, info in printers.items()
+            },
+            "discovery_methods": {
+                "snmp_broadcast": True,  # quicksnmp module available
+                "snmp_targeted": True,  # quicksnmp module available
+                "mdns": True,  # zeroconf module available
+                "network_scan": True,  # built-in socket scanning
+                "usb": True,  # brother_ql USB support
+            },
         }
-    }), 200
+    ), 200
 
 
-@api.route('/printers/test', methods=['POST'])
+@api.route("/printers/test", methods=["POST"])
 def test_manual_connection():
     """Test manual connection to IP address or subnet and add successful connections to registry"""
-    data = flask.request.json
-    target = data.get('target', '').strip()
+    data = flask.request.get_json()
+    target = data.get("target", "").strip()
 
     if not target:
-        return flask.jsonify({'error': 'No target specified'}), 400
+        return flask.jsonify({"error": "No target specified"}), 400
 
     # Test the connection
     result = printer_utils.test_manual_connection(target)
 
     # If successful and found valid printers, add them to the registry
-    if result.get('success') and result.get('printers_found'):
-        from label_bro.utils.printer_utils import _discovered_printers, PrinterInfo
+    if result.get("success") and result.get("printers_found"):
+        from label_bro.utils.printer_utils import PrinterInfo, _discovered_printers
 
-        for printer in result['printers_found']:
+        for printer in result["printers_found"]:
             # Only add printers that are ready (media loaded and printer ready)
-            if printer.get('media_loaded') and printer.get('printer_ready'):
+            if printer.get("media_loaded") and printer.get("printer_ready"):
                 printer_id = f"manual_{printer['ip'].replace('.', '_')}"
 
                 # Create PrinterInfo object for the manual printer
                 printer_info = PrinterInfo(
                     identifier=f"tcp://{printer['ip']}:9100",
-                    model_number=printer['model'],
-                    label_size=printer.get('media_width', '62mm').replace('mm', ''),
+                    model_number=printer["model"],
+                    label_size=printer.get("media_width", "62mm").replace("mm", ""),
                     backend="network",
                     display_name=f"{printer['model']} at {printer['ip']} (Manual)",
                     is_connected=True,
-                    media_info=f"{printer.get('media_width', '62mm')} {printer.get('media_type', 'labels')} (ready)"
+                    media_info=f"{printer.get('media_width', '62mm')} {printer.get('media_type', 'labels')} (ready)",
                 )
 
                 # Add to discovered printers registry
@@ -172,40 +181,44 @@ def test_manual_connection():
     return flask.jsonify(result), 200
 
 
-@api.route('/printLabels', methods=['POST'])
+@api.route("/printLabels", methods=["POST"])
 def print_labels_endpoint():
-    data = flask.request.json.get('data', {})
-    text_content = data.get('text', '')
-    should_print_full = data.get('shouldPrintFullLabel', True)
-    should_print_small = data.get('shouldPrintSmallLabel', True)
-    printer_id = data.get('printer_id')
+    data = flask.request.get_json().get("data", {})
+    text_content = data.get("text", "")
+    should_print_full = data.get("shouldPrintFullLabel", True)
+    should_print_small = data.get("shouldPrintSmallLabel", True)
+    printer_id = data.get("printer_id")
 
-    errors: List[str] = []
+    errors: list[str] = []
 
     if not text_content:
-        return flask.jsonify({'error': 'Invalid input'}), 400
+        return flask.jsonify({"error": "Invalid input"}), 400
 
     if not printer_id:
-        return flask.jsonify({'error': 'No printer selected. Please refresh and select a printer.'}), 400
+        return flask.jsonify({"error": "No printer selected. Please refresh and select a printer."}), 400
 
     if not isinstance(should_print_full, bool) and not isinstance(should_print_small, bool):
-        return flask.jsonify({'error': 'Invalid input. shouldPrintFullLabel and shouldPrintSmallLabel must be boolean values'}), 400
+        return flask.jsonify(
+            {"error": "Invalid input. shouldPrintFullLabel and shouldPrintSmallLabel must be boolean values"}
+        ), 400
 
     # Verify printer exists in discovered printers
     try:
         printer_info = printer_utils.get_printer_info(printer_id)
         if not printer_info.is_connected:
-            return flask.jsonify({'error': f'Printer {printer_info.display_name} is no longer available. Please refresh.'}), 500
+            return flask.jsonify(
+                {"error": f"Printer {printer_info.display_name} is no longer available. Please refresh."}
+            ), 500
     except ValueError as e:
-        return flask.jsonify({'error': f'Selected printer not found. Please refresh and select again. ({str(e)})'}), 500
+        return flask.jsonify({"error": f"Selected printer not found. Please refresh and select again. ({e!s})"}), 500
 
-    lines = text_content.split('\n')
+    lines = text_content.split("\n")
     for line in lines:
         line = line.strip()
         if not line:
             continue
 
-        split_line = line.split(';')
+        split_line = line.split(";")
         label_text = split_line[0]
         if len(split_line) > 1:
             repeat_times = int(split_line[1])
@@ -214,28 +227,28 @@ def print_labels_endpoint():
         else:
             repeat_times = 1
 
-        for i in range(repeat_times):
+        for _ in range(repeat_times):
             if should_print_full:
-                status = label_creation.process_label(label_text, LABEL_WIDTH, 'full', printer_id)
+                status = label_creation.process_label(label_text, LABEL_WIDTH, "full", printer_id)
                 if status:
                     errors.append(str(status))
 
             if should_print_small:
-                status = label_creation.process_label(label_text, LABEL_WIDTH, 'small', printer_id)
+                status = label_creation.process_label(label_text, LABEL_WIDTH, "small", printer_id)
                 if status:
                     errors.append(str(status))
 
-    # check all the errors
+    # [LAW:no-silent-failure] exception: every send's status is reported but none fails the request
+    # (labelbro-backend-1k8.my5).
+    return flask.jsonify({"status": errors}), 200
 
-    return flask.jsonify({'status': f'Label status: {status}'}), 200
 
-
-@api.route('/previewLabels', methods=['POST'])
+@api.route("/previewLabels", methods=["POST"])
 def preview_labels_endpoint():
-    data = flask.request.json.get('data', {})
-    text_content = data.get('text', '')
-    should_print_full: bool = data.get('shouldPrintFullLabel', True)
-    should_print_small: bool = data.get('shouldPrintSmallLabel', True)
+    data = flask.request.get_json().get("data", {})
+    text_content = data.get("text", "")
+    should_print_full: bool = data.get("shouldPrintFullLabel", True)
+    should_print_small: bool = data.get("shouldPrintSmallLabel", True)
 
     if not text_content:
         raise ValueError("Input is empty!")
@@ -243,49 +256,40 @@ def preview_labels_endpoint():
     full_images = []
     small_images = []
 
-    lines = text_content.split('\n')
+    lines = text_content.split("\n")
     for line in lines:
         line = line.strip()
         if not line:
             continue
 
-        split_line = line.split(';')
+        split_line = line.split(";")
         label_text = split_line[0]
 
         if should_print_full:
-            full_image, error = label_creation.create_full_width_label_image(label_text, LABEL_WIDTH)
-            if error:
-                raise error
-            full_images.append(full_image)
+            full_images.append(label_creation.create_full_width_label_image(label_text, LABEL_WIDTH))
 
         if should_print_small:
-            small_image, error = label_creation.create_small_label_image(label_text, LABEL_WIDTH)
-            if error:
-                raise error
-            small_images.append(small_image)
+            small_images.append(label_creation.create_small_label_image(label_text, LABEL_WIDTH))
 
     full_labels_base64 = [label_creation.img_to_base64(img) for img in full_images]
     small_labels_base64 = [label_creation.img_to_base64(img) for img in small_images]
 
-    return flask.jsonify({
-        'full_labels': full_labels_base64,
-        'small_labels': small_labels_base64
-    }), 200
+    return flask.jsonify({"full_labels": full_labels_base64, "small_labels": small_labels_base64}), 200
 
 
-@api.route('/log-frontend-error', methods=['POST'])
+@api.route("/log-frontend-error", methods=["POST"])
 def log_frontend_error():
     """Endpoint for frontend to send TypeScript/validation errors to backend for centralized logging"""
     data = flask.request.get_json()
 
     if not data:
-        return flask.jsonify({'error': 'No data provided'}), 400
+        return flask.jsonify({"error": "No data provided"}), 400
 
-    error_type = data.get('type', 'FRONTEND_ERROR')
-    error_message = data.get('message', 'Unknown error')
-    error_details = data.get('details', {})
-    timestamp = data.get('timestamp', datetime.now().isoformat())
-    source = data.get('source', 'frontend')
+    error_type = data.get("type", "FRONTEND_ERROR")
+    error_message = data.get("message", "Unknown error")
+    error_details = data.get("details", {})
+    timestamp = data.get("timestamp", datetime.now().isoformat())
+    source = data.get("source", "frontend")
 
     # Format error for stderr logging
     formatted_error = f"""
@@ -309,27 +313,29 @@ def log_frontend_error():
     print(f"[FRONTEND_ERROR] {error_type}: {error_message}", flush=True)
 
     # Log details if they contain validation errors (for AI feedback)
-    if 'validationErrors' in error_details:
+    if "validationErrors" in error_details:
         validation_summary = f"[VALIDATION_FAILURE] {len(error_details['validationErrors'])} validation errors detected"
         print(validation_summary, file=sys.stderr, flush=True)
 
         # Log first few validation errors for debugging
-        for i, error in enumerate(error_details['validationErrors'][:3]):
-            error_line = f"  [{i+1}] Path: {error.get('path', 'unknown')} | Expected: {error.get('expected', 'unknown')} | Got: {str(error.get('value', 'unknown'))[:30]}"
+        for i, error in enumerate(error_details["validationErrors"][:3]):
+            error_line = f"  [{i + 1}] Path: {error.get('path', 'unknown')} | Expected: {error.get('expected', 'unknown')} | Got: {str(error.get('value', 'unknown'))[:30]}"
             print(error_line, file=sys.stderr, flush=True)
 
-        if len(error_details['validationErrors']) > 3:
-            print(f"  ... and {len(error_details['validationErrors']) - 3} more validation errors", file=sys.stderr, flush=True)
+        if len(error_details["validationErrors"]) > 3:
+            print(
+                f"  ... and {len(error_details['validationErrors']) - 3} more validation errors",
+                file=sys.stderr,
+                flush=True,
+            )
 
-    return flask.jsonify({
-        'status': 'logged',
-        'message': 'Error logged to backend successfully'
-    }), 200
+    return flask.jsonify({"status": "logged", "message": "Error logged to backend successfully"}), 200
 
 
 # AI generation routes removed - functionality not needed for multiple printer support
 
 app.register_blueprint(api)
+
 
 def find_available_port(start_port=5099, max_attempts=100):
     """Find an available port starting from start_port; raise if the whole range is taken"""
@@ -337,7 +343,7 @@ def find_available_port(start_port=5099, max_attempts=100):
         try:
             # Create a socket and try to bind to the port
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.bind(('0.0.0.0', port))
+                sock.bind(("0.0.0.0", port))
                 return port
         except OSError:
             # Port is in use, try the next one
@@ -349,10 +355,11 @@ def find_available_port(start_port=5099, max_attempts=100):
 
 class AppLoggedRequestHandler(WSGIRequestHandler):
     # [LAW:one-source-of-truth] log_request in the app emits the per-request event; Werkzeug's access line would be a second.
-    def log_request(self, code='-', size='-'):
+    def log_request(self, code="-", size="-"):
         pass
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # [LAW:effects-at-boundaries] log levels are the host's choice; this entry point is the host.
     app.logger.setLevel(logging.INFO)
     # [LAW:effects-at-boundaries] discovery scans the network, so it starts with the server, not on import.
@@ -361,4 +368,4 @@ if __name__ == '__main__':
     app.logger.info("Starting server on port %d", port)
     # The server binds every interface so phones on the LAN can reach it; the Werkzeug
     # debugger executes arbitrary code, so it is never enabled here.
-    app.run(host='0.0.0.0', port=port, debug=False, request_handler=AppLoggedRequestHandler)
+    app.run(host="0.0.0.0", port=port, debug=False, request_handler=AppLoggedRequestHandler)

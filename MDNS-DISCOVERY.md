@@ -46,11 +46,12 @@ class BrotherPrinterListener(ServiceListener):
     
     def _parse_brother_printer_info(self, info, service_type, name):
         """Parse Brother printer info from mDNS service using TXT records"""
-        properties = info.properties if info.properties else {}
+        # A key-only TXT entry decodes to None and reads as ""
+        txt = {key: value or "" for key, value in info.decoded_properties.items()}
         
         # Extract model from TXT records
-        model = self._extract_model_from_txt(properties)
-        manufacturer = self._extract_manufacturer_from_txt(properties)
+        model = self._extract_model_from_txt(txt)
+        manufacturer = self._extract_manufacturer_from_txt(txt)
         
         # Verify this is a Brother printer
         if not self._is_brother_printer(model, manufacturer, name):
@@ -74,15 +75,15 @@ Strict criteria to avoid false positives:
 ```python
 def _is_brother_printer(self, model, manufacturer, service_name):
     # Primary: Model contains both "Brother" and "QL-"
-    if model and 'Brother' in model and 'QL-' in model.upper():
+    if model and "Brother" in model and "QL-" in model.upper():
         return True
-    
+
     # Secondary: Model has QL- AND manufacturer is Brother
-    if model and 'QL-' in model.upper() and manufacturer == 'Brother':
+    if model and "QL-" in model.upper() and manufacturer == "Brother":
         return True
-        
+
     # Reject non-Brother manufacturers
-    if manufacturer and manufacturer not in ['Brother', 'Unknown']:
+    if manufacturer and manufacturer not in ["Brother", "Unknown"]:
         return False
 ```
 
@@ -93,9 +94,9 @@ Prevents duplicate entries when the same printer is found via multiple service t
 ```python
 # Check for duplicates (same IP and model)
 for existing in self.discovered_printers:
-    if existing['ip'] == ip and existing['model'] == model:
+    if existing["ip"] == ip and existing["model"] == model:
         # Update service types but don't duplicate
-        existing.setdefault('service_types', []).append(type_)
+        existing.setdefault("service_types", []).append(type_)
         return
 ```
 
@@ -105,17 +106,17 @@ The enhanced discovery provides comprehensive printer information:
 
 ```python
 {
-    'ip': '192.168.7.26',
-    'port': 631,
-    'model': 'Brother QL-800 CUPS',
-    'manufacturer': 'Brother',
-    'mac_address': 'AB:CD:EF:12:34:56',
-    'user_name': 'Office Printer',
-    'service_type': '_ipp._tcp.local.',
-    'service_types': ['_ipp._tcp.local.', '_printer._tcp.local.'],
-    'discovery_method': 'mDNS_TXT',
-    'hostname': 'printer.local.',
-    'txt_records': { ... }  # Full TXT record dump
+    "ip": "192.168.7.26",
+    "port": 631,
+    "model": "Brother QL-800 CUPS",
+    "manufacturer": "Brother",
+    "mac_address": "AB:CD:EF:12:34:56",
+    "user_name": "Office Printer",
+    "service_type": "_ipp._tcp.local.",
+    "service_types": ["_ipp._tcp.local.", "_printer._tcp.local."],
+    "discovery_method": "mDNS_TXT",
+    "hostname": "printer.local.",
+    "txt_records": {...},  # Full TXT record dump
 }
 ```
 
@@ -153,15 +154,15 @@ The enhanced mDNS discovery is integrated into the main autodiscovery hierarchy:
 ### Before (Name-based)
 ```python
 # Old approach: unreliable name parsing
-if 'brother' in name.lower() or 'bro' in name.lower():
+if "brother" in name.lower() or "bro" in name.lower():
     model = self._extract_model_from_name(name)  # Guessing
 ```
 
 ### After (TXT Record-based)
 ```python
 # New approach: protocol-compliant TXT record parsing
-model = properties.get(b'ty', b'').decode('utf-8')  # Official field
-if model and 'QL-810W' in model:
+model = txt.get("ty", "")  # Official field
+if model and "QL-810W" in model:
     return True  # Reliable identification
 ```
 

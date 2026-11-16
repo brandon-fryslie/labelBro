@@ -29,7 +29,7 @@ brew install cairo libusb
 ln -s /opt/homebrew/lib ~/lib
 
 # Create the virtual environment (.venv) and install all dependencies
-uv sync --extra dev
+uv sync
 
 # Install Node and pnpm if you don't have them (pnpm uses the version pinned in package.json)
 brew install node pnpm
@@ -66,11 +66,15 @@ This project uses:
 - **Build**: Vite (`vite.config.ts`)
 - **Package Management**: uv for Python, pnpm for Node.js
 - **Testing**: Vitest with jsdom and Testing Library for frontend, pytest for backend
+- **Lint and types**: ruff (lint + format) and pyright for backend; their rules live in `pyproject.toml`
 
 ### Running Tests
 
 ```shell
-uv run --extra dev pytest
+uv run pytest
+uv run ruff check .
+uv run ruff format --check .
+uv run pyright
 pnpm test
 pnpm typecheck
 ```
