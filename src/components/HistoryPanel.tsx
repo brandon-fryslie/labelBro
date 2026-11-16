@@ -1,5 +1,4 @@
 import React from 'react';
-import { useApp } from '../context/AppContext';
 import { useLabels } from '../hooks/useLabels';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
@@ -14,14 +13,13 @@ interface HistoryItem {
 }
 
 interface HistoryPanelProps {
-  isVisible?: boolean;
-  onToggle?: () => void;
+  isVisible?: boolean | undefined;
+  onToggle?: (() => void) | undefined;
 }
 
 export function HistoryPanel({ isVisible = false, onToggle }: HistoryPanelProps): React.ReactElement {
-  const { state } = useApp();
   const { updateLabelText, setPrintFullLabel, setPrintSmallLabel } = useLabels();
-  
+
   // History state
   const [printHistory, setPrintHistory] = useLocalStorage<HistoryItem[]>('labelBro_printHistory', []);
 
@@ -42,7 +40,6 @@ export function HistoryPanel({ isVisible = false, onToggle }: HistoryPanelProps)
   };
 
   const clearHistory = () => {
-    const historyCount = printHistory.length;
     setPrintHistory([]);
   };
 
@@ -64,7 +61,7 @@ export function HistoryPanel({ isVisible = false, onToggle }: HistoryPanelProps)
   // Add current label to history when print is successful
   const addToHistory = (text: string, printOptions: { printFullLabel: boolean; printSmallLabel: boolean }) => {
     if (!text.trim()) return;
-    
+
     const newItem: HistoryItem = {
       id: Date.now().toString(),
       text: text.trim(),
@@ -94,7 +91,7 @@ export function HistoryPanel({ isVisible = false, onToggle }: HistoryPanelProps)
           <h3>Label History</h3>
           <div className="history-actions">
             {printHistory.length > 0 && (
-              <button 
+              <button
                 className="clear-history-button"
                 onClick={clearHistory}
                 title="Clear all history"
@@ -102,7 +99,7 @@ export function HistoryPanel({ isVisible = false, onToggle }: HistoryPanelProps)
                 🗑️
               </button>
             )}
-            <button 
+            <button
               className="close-history-button"
               onClick={toggleHistory}
               aria-label="Close history"
@@ -111,7 +108,7 @@ export function HistoryPanel({ isVisible = false, onToggle }: HistoryPanelProps)
             </button>
           </div>
         </div>
-        
+
         <div className="history-content">
           {printHistory.length === 0 ? (
             <div className="history-empty">
@@ -121,7 +118,7 @@ export function HistoryPanel({ isVisible = false, onToggle }: HistoryPanelProps)
           ) : (
             <div className="history-list">
               {printHistory.map((item) => (
-                <div 
+                <div
                   key={item.id}
                   className="history-item"
                   onClick={() => selectHistoryItem(item)}

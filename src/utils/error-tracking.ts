@@ -1,14 +1,13 @@
 // Optimized Sentry error tracking integration - minimal bundle size
 // Import only essential functions to exclude heavy features like Replay, Feedback, Canvas
-import { 
-  init, 
-  captureException, 
-  captureMessage, 
-  setUser, 
-  setTag, 
-  setContext, 
+import {
+  init,
+  captureException,
+  captureMessage,
+  setUser,
+  setTag,
+  setContext,
   withScope,
-  getCurrentScope,
   // Import only essential browser integrations to minimize bundle size
   globalHandlersIntegration,
   breadcrumbsIntegration,
@@ -19,9 +18,9 @@ import {
 } from '@sentry/browser';
 
 interface ErrorTrackingConfig {
-  dsn?: string;
+  dsn?: string | undefined;
   environment: 'development' | 'production' | 'staging';
-  release?: string;
+  release?: string | undefined;
   sampleRate: number;
   tracesSampleRate: number;
 }
@@ -44,14 +43,24 @@ class ErrorTrackingService {
       ...config
     };
 
+    // Ensure DSN and release are defined before passing to init
+    const dsn = defaultConfig.dsn || process.env.REACT_APP_SENTRY_DSN;
+    const release = defaultConfig.release || process.env.REACT_APP_VERSION;
+
+    // Skip initialization if no DSN is available
+    if (!dsn) {
+      console.log('🔧 Sentry disabled (no DSN configured)');
+      return;
+    }
+
     try {
-      init({
-        dsn: defaultConfig.dsn || process.env.REACT_APP_SENTRY_DSN,
+      // Build the config object conditionally to satisfy exactOptionalPropertyTypes
+      const sentryConfig: any = {
+        dsn: dsn,
         environment: defaultConfig.environment,
-        release: defaultConfig.release || process.env.REACT_APP_VERSION,
         sampleRate: defaultConfig.sampleRate,
         tracesSampleRate: defaultConfig.tracesSampleRate,
-        
+
         // Minimal integrations - exclude heavy features to reduce bundle size
         integrations: [
           // Essential error handling
@@ -59,7 +68,7 @@ class ErrorTrackingService {
             onunhandledrejection: true,
             onerror: true,
           }),
-          
+
           // Basic breadcrumbs - minimal configuration
           breadcrumbsIntegration({
             console: false, // Disable console breadcrumbs to reduce noise and bundle size
@@ -69,34 +78,32 @@ class ErrorTrackingService {
             sentry: false,  // Disable Sentry breadcrumbs to reduce noise
             xhr: false,     // Disable XHR tracking to reduce bundle size
           }),
-          
+
           // Error deduplication
           dedupeIntegration(),
-          
+
           // Basic error filtering
           inboundFiltersIntegration(),
-          
+
           // Linked error handling
           linkedErrorsIntegration({
             key: 'cause',
             limit: 3, // Limit chain depth to reduce processing
           }),
-          
+
           // Minimal tracing - disabled most features for bundle size
           browserTracingIntegration({
-            routingInstrumentation: undefined, // No routing instrumentation
             enableLongTask: false, // Disable long task tracking
             enableInp: false, // Disable INP tracking
-            enableUserInteractionTracing: false, // Disable interaction tracking
           }),
         ],
-        
+
         // Exclude heavy features completely (these are auto-included by default)
         // replayIntegration - EXCLUDED (294KB)
-        // feedbackIntegration - EXCLUDED (75KB)  
+        // feedbackIntegration - EXCLUDED (75KB)
         // replayCanvasIntegration - EXCLUDED (31KB)
 
-        beforeSend: (event, hint) => {
+        beforeSend: (event: any, hint: any) => {
           // Filter out noise in development
           if (this.isDevelopment) {
             console.log('📋 Sentry Event:', event);
@@ -106,7 +113,7 @@ class ErrorTrackingService {
           // Don't send certain errors in production to reduce noise
           if (event.exception) {
             const error = hint?.originalException;
-            
+
             // Skip network errors that are not actionable
             if (error instanceof Error) {
               if (error.message.includes('Network request failed') ||
@@ -122,7 +129,7 @@ class ErrorTrackingService {
           return event;
         },
 
-        beforeBreadcrumb: (breadcrumb) => {
+        beforeBreadcrumb: (breadcrumb: any) => {
           // Minimal breadcrumb filtering
           if (breadcrumb.category === 'console' && breadcrumb.level === 'debug') {
             return null;
@@ -138,7 +145,14 @@ class ErrorTrackingService {
 
           return breadcrumb;
         }
-      });
+      };
+
+      // Only add release if it's defined (satisfies exactOptionalPropertyTypes)
+      if (release) {
+        sentryConfig.release = release;
+      }
+
+      init(sentryConfig);
 
       // Set minimal context using withScope
       withScope((scope) => {
@@ -154,7 +168,7 @@ class ErrorTrackingService {
       });
 
       this.isInitialized = true;
-      
+
       if (this.isDevelopment) {
         console.log('🔍 Sentry initialized (minimal bundle configuration)');
       }
@@ -214,7 +228,7 @@ class ErrorTrackingService {
     if (!this.isInitialized) return;
 
     setUser(user);
-    
+
     if (this.isDevelopment) {
       console.log('👤 User context set:', user);
     }

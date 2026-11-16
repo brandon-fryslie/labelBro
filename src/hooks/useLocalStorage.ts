@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 
 // Generic localStorage hook with TypeScript support
 export function useLocalStorage<T>(
@@ -24,10 +24,10 @@ export function useLocalStorage<T>(
     try {
       // Allow value to be a function so we have the same API as useState
       const valueToStore = value instanceof Function ? value(storedValue) : value;
-      
+
       // Save state
       setStoredValue(valueToStore);
-      
+
       // Save to local storage
       window.localStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {
@@ -53,7 +53,7 @@ export function useStoredPrintOptions(): [
     printSmallLabel: true,
     clearAfterPrint: false,
   });
-  
+
   return [value, setValue];
 }
 

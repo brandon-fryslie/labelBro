@@ -8,10 +8,10 @@ interface LogsPanelProps {
 export function LogsPanel({ logs }: LogsPanelProps): React.ReactElement {
   const [isExpanded, setIsExpanded] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-  
+
   // Get latest logs for collapsed view (showing most recent 1-2)
   const latestLogs = logs.slice(0, 2);
-  
+
   // Handle click outside to collapse
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -19,33 +19,34 @@ export function LogsPanel({ logs }: LogsPanelProps): React.ReactElement {
         setIsExpanded(false);
       }
     };
-    
+
     if (isExpanded) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }
-    
+
     // Explicitly return undefined for the else case
     return undefined;
   }, [isExpanded]);
-  
+
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded);
   };
-  
+
   const handleClose = () => {
     setIsExpanded(false);
   };
 
   // Format timestamp
-  const formatTime = (timestamp: Date) => {
-    return timestamp.toLocaleTimeString('en-US', { 
-      hour12: false, 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
+  const formatTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
     });
   };
 
@@ -63,25 +64,27 @@ export function LogsPanel({ logs }: LogsPanelProps): React.ReactElement {
     }
   };
 
-  const renderLogEntry = (log: LogEntry, index: number) => (
+  const renderLogEntry = (log: LogEntry) => (
     <div
-      key={`${log.timestamp.getTime()}-${index}`}
+      key={log.id}
       className={`px-3 py-2 rounded border ${getLevelStyling(log.level)} text-sm`}
+      data-testid="log-entry"
     >
       <div className="flex items-center justify-between mb-1">
         <span className="font-medium capitalize">{log.level}</span>
         <span className="text-xs opacity-75">{formatTime(log.timestamp)}</span>
       </div>
       <div className="font-mono text-xs break-words">
+        {log.source && <span className="text-gray-600">[{log.source}] </span>}
         {log.message}
       </div>
-      {log.data && (
+      {log.metadata && Object.keys(log.metadata).length > 0 && (
         <details className="mt-2">
           <summary className="cursor-pointer text-xs font-medium opacity-75">
             Additional Data
           </summary>
           <pre className="mt-1 text-xs opacity-75 whitespace-pre-wrap break-words">
-            {JSON.stringify(log.data, null, 2)}
+            {JSON.stringify(log.metadata, null, 2)}
           </pre>
         </details>
       )}
@@ -90,7 +93,7 @@ export function LogsPanel({ logs }: LogsPanelProps): React.ReactElement {
 
   if (!logs || logs.length === 0) {
     return (
-      <div className="bg-gray-100 border-t p-3 text-center text-gray-500 text-sm">
+      <div className="bg-gray-100 border-t p-3 text-center text-gray-500 text-sm" data-testid="logs-panel">
         No logs available
       </div>
     );
@@ -102,6 +105,7 @@ export function LogsPanel({ logs }: LogsPanelProps): React.ReactElement {
       className={`bg-white border-t transition-all duration-300 ${
         isExpanded ? 'max-h-80' : 'max-h-20'
       } overflow-hidden`}
+      data-testid="logs-panel"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b bg-gray-50">
@@ -139,9 +143,9 @@ export function LogsPanel({ logs }: LogsPanelProps): React.ReactElement {
       <div className="overflow-y-auto max-h-60">
         <div className="p-3 space-y-2">
           {isExpanded ? (
-            logs.map((log, index) => renderLogEntry(log, index))
+            logs.map((log) => renderLogEntry(log))
           ) : (
-            latestLogs.map((log, index) => renderLogEntry(log, index))
+            latestLogs.map((log) => renderLogEntry(log))
           )}
         </div>
       </div>

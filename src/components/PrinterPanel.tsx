@@ -1,19 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { usePrinters } from '../hooks/usePrinters';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 export function PrinterPanel(): React.ReactElement {
-  const { state, togglePrinterPanel, setConnectionMode, setManualIp } = useApp();
-  const { 
-    printers, 
-    selectedPrinterId, 
-    isDiscovering, 
-    connectionStatus, 
+  const { state, setConnectionMode, setManualIp } = useApp();
+  const {
+    printers,
+    selectedPrinterId,
+    isDiscovering,
     connectionResults,
-    discoverPrinters, 
-    connectManually, 
-    selectPrinter 
+    discoverPrinters,
+    connectManually,
+    selectPrinter
   } = usePrinters();
 
   // Load stored preferences
@@ -26,7 +25,7 @@ export function PrinterPanel(): React.ReactElement {
     const mode = storedConnectionMode || 'auto';
     setConnectionMode(mode);
     setManualIp(storedManualIp);
-    
+
     // Auto-discover if in auto mode
     if (mode === 'auto') {
       discoverPrinters();
@@ -36,7 +35,7 @@ export function PrinterPanel(): React.ReactElement {
   const handleConnectionModeChange = (mode: 'manual' | 'auto') => {
     setConnectionMode(mode);
     setStoredConnectionMode(mode);
-    
+
     if (mode === 'auto') {
       discoverPrinters();
     }
@@ -63,16 +62,16 @@ export function PrinterPanel(): React.ReactElement {
     <div className={`printer-panel ${state.isPrinterPanelExpanded ? '' : 'hidden'}`}>
       <div className="printer-selection-container">
         <h3>Printer Connection</h3>
-        
+
         {/* Connection Mode Selector */}
         <div className="connection-mode-selector">
-          <button 
+          <button
             className={`mode-button ${state.connectionMode === 'auto' ? 'active' : ''}`}
             onClick={() => handleConnectionModeChange('auto')}
           >
             🔍 Auto Discovery
           </button>
-          <button 
+          <button
             className={`mode-button ${state.connectionMode === 'manual' ? 'active' : ''}`}
             onClick={() => handleConnectionModeChange('manual')}
           >
@@ -84,9 +83,9 @@ export function PrinterPanel(): React.ReactElement {
           {state.connectionMode === 'manual' ? (
             <div className="manual-connection">
               <div className="ip-input-group">
-                <input 
-                  type="text" 
-                  className="ip-input" 
+                <input
+                  type="text"
+                  className="ip-input"
                   placeholder="Enter printer IP (e.g., 192.168.1.100)"
                   value={state.manualIp}
                   onChange={(e) => handleManualIpChange(e.target.value)}
@@ -96,8 +95,8 @@ export function PrinterPanel(): React.ReactElement {
                     }
                   }}
                 />
-                <button 
-                  className="connect-button" 
+                <button
+                  className="connect-button"
                   onClick={handleManualConnect}
                   disabled={connectButtonDisabled}
                 >
@@ -116,8 +115,8 @@ export function PrinterPanel(): React.ReactElement {
               {Object.keys(printers).length > 0 ? (
                 <div className="printer-list">
                   {Object.entries(printers).map(([id, printer]) => (
-                    <div 
-                      key={id} 
+                    <div
+                      key={id}
                       className={`printer-item ${selectedPrinterId === id ? 'selected' : ''}`}
                       onClick={() => handleSelectPrinter(id)}
                     >
@@ -141,10 +140,10 @@ export function PrinterPanel(): React.ReactElement {
                   <small>Click the button below to search again</small>
                 </div>
               )}
-              
+
               {/* Discover Button */}
-              <button 
-                className="discover-button" 
+              <button
+                className="discover-button"
                 onClick={discoverPrinters}
                 disabled={isDiscovering}
               >
@@ -156,14 +155,4 @@ export function PrinterPanel(): React.ReactElement {
       </div>
     </div>
   );
-}
-
-// Hook to persist connection mode
-function useStoredConnectionMode() {
-  return useLocalStorage<'manual' | 'auto'>('labelBro_connectionMode', 'auto');
-}
-
-// Hook to persist manual IP
-function useStoredManualIp() {
-  return useLocalStorage<string>('labelBro_manualIp', '');
 }

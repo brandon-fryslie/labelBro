@@ -1,10 +1,9 @@
 // API communication module for the labelBro frontend
-import { 
-  LabelPreviewData, 
-  PrintersResponse, 
-  PrintRequest, 
-  DiscoveryResponse, 
-  ManualConnectionResult 
+import {
+  LabelPreviewData,
+  PrintRequest,
+  DiscoveryResponse,
+  ManualConnectionResult
 } from '../types';
 import { TypeValidator, ValidationError, ValidationReporter } from '../validation';
 
@@ -28,15 +27,15 @@ export class LabelBroAPI {
     });
 
     const data = await response.json();
-    
+
     // Convert base64 strings to data URLs for image display (with defensive checks)
     if (data.full_labels && Array.isArray(data.full_labels)) {
-      data.full_labels = data.full_labels.map((base64: string) => 
+      data.full_labels = data.full_labels.map((base64: string) =>
         `data:image/png;base64,${base64}`
       );
     }
     if (data.small_labels && Array.isArray(data.small_labels)) {
-      data.small_labels = data.small_labels.map((base64: string) => 
+      data.small_labels = data.small_labels.map((base64: string) =>
         `data:image/png;base64,${base64}`
       );
     }
@@ -73,7 +72,7 @@ export class LabelBroAPI {
           );
           ValidationReporter.logValidationError(configError);
           ValidationReporter.reportError(configError);
-          
+
           // For now, return the raw data since validation can't work
           console.warn('⚠️ Typia validation disabled - returning unvalidated data');
           return rawData.printers || rawData || {};
@@ -120,7 +119,7 @@ export class LabelBroAPI {
         if (error instanceof ValidationError) {
           ValidationReporter.logValidationError(error);
           ValidationReporter.reportError(error);
-          
+
           // For discovery, use graceful degradation - return the data even if validation fails
           console.warn('⚠️ DiscoveryResponse validation failed - returning unvalidated data');
           return rawData as DiscoveryResponse;
@@ -133,7 +132,7 @@ export class LabelBroAPI {
           );
           ValidationReporter.logValidationError(configError);
           ValidationReporter.reportError(configError);
-          
+
           // For now, return the raw data since validation can't work
           console.warn('⚠️ Typia validation disabled - returning unvalidated data');
           return rawData as DiscoveryResponse;
@@ -164,7 +163,7 @@ export class LabelBroAPI {
         );
         ValidationReporter.logValidationError(configError);
         ValidationReporter.reportError(configError);
-        
+
         // For now, skip validation since it can't work
         console.warn('⚠️ Typia validation disabled - skipping input validation');
       } else {
@@ -209,7 +208,7 @@ export class LabelBroAPI {
       if (error instanceof ValidationError) {
         ValidationReporter.logValidationError(error);
         ValidationReporter.reportError(error);
-        
+
         // Return raw data for graceful degradation
         console.warn('⚠️ ManualConnectionResult validation failed - returning unvalidated data');
         return rawData as ManualConnectionResult;
@@ -222,7 +221,7 @@ export class LabelBroAPI {
         );
         ValidationReporter.logValidationError(configError);
         ValidationReporter.reportError(configError);
-        
+
         // For now, return the raw data since validation can't work
         console.warn('⚠️ Typia validation disabled - returning unvalidated data');
         return rawData as ManualConnectionResult;

@@ -32,7 +32,7 @@ export interface PrintRequest {
     text: string;
     shouldPrintFullLabel: boolean;
     shouldPrintSmallLabel: boolean;
-    printer_id?: string;
+    printer_id?: string | undefined;
   };
 }
 
@@ -58,3 +58,13 @@ export interface ManualConnectionResult {
 }
 
 export type ManualConnectionStatusType = 'error' | 'success' | 'testing';
+
+// Log entry type for logging system
+export interface LogEntry {
+  id: string;
+  timestamp: number;
+  level: 'info' | 'warning' | 'error' | 'debug';
+  message: string;
+  source?: string;
+  metadata?: Record<string, any>;
+}

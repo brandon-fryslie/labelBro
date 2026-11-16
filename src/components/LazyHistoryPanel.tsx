@@ -2,17 +2,17 @@ import React, { Suspense } from 'react';
 import { errorTracking } from '../utils/error-tracking';
 
 // Lazy load HistoryPanel for code splitting
-const HistoryPanel = React.lazy(() => 
+const HistoryPanel = React.lazy(() =>
   import('./HistoryPanel').then(module => ({ default: module.HistoryPanel }))
 );
 
 interface HistoryPanelProps {
-  isVisible?: boolean;
-  onToggle?: () => void;
+  isVisible?: boolean | undefined;
+  onToggle?: (() => void) | undefined;
 }
 
 // Loading fallback component
-function HistoryPanelSkeleton({ isVisible = false }: { isVisible?: boolean }): React.ReactElement {
+function HistoryPanelSkeleton({ isVisible = false }: { isVisible?: boolean | undefined }): React.ReactElement {
   return (
     <div className={`history-panel ${isVisible ? '' : 'hidden'}`}>
       <div className="history-header">
@@ -33,10 +33,10 @@ function HistoryPanelSkeleton({ isVisible = false }: { isVisible?: boolean }): R
 
 // Error boundary for lazy loaded component
 class HistoryPanelErrorBoundary extends React.Component<
-  { children: React.ReactNode; isVisible?: boolean; onToggle?: () => void },
+  { children: React.ReactNode; isVisible?: boolean | undefined; onToggle?: (() => void) | undefined },
   { hasError: boolean }
 > {
-  constructor(props: { children: React.ReactNode; isVisible?: boolean; onToggle?: () => void }) {
+  constructor(props: { children: React.ReactNode; isVisible?: boolean | undefined; onToggle?: (() => void) | undefined }) {
     super(props);
     this.state = { hasError: false };
   }
@@ -47,7 +47,7 @@ class HistoryPanelErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error('HistoryPanel lazy loading error:', error, errorInfo);
-    
+
     // Report to Sentry with specific context
     errorTracking.captureComponentError(error, 'LazyHistoryPanel', {
       lazyLoading: true,
@@ -63,7 +63,7 @@ class HistoryPanelErrorBoundary extends React.Component<
         <div className={`history-panel ${this.props.isVisible ? '' : 'hidden'}`}>
           <div className="history-header">
             <h3>History Error</h3>
-            <button 
+            <button
               onClick={this.props.onToggle}
               className="history-close-btn"
               aria-label="Close history panel"
@@ -76,19 +76,19 @@ class HistoryPanelErrorBoundary extends React.Component<
               <p>Unable to load label history at this time.</p>
               <p>Please check your connection and try again.</p>
               <div className="flex flex-col gap-2 mt-4">
-                <button 
+                <button
                   onClick={() => {
                     errorTracking.captureMessage('User retried history panel after error', 'info', {
-                      action: 'lazy_component_retry', 
+                      action: 'lazy_component_retry',
                       component: 'HistoryPanel'
                     });
                     this.setState({ hasError: false });
-                  }} 
+                  }}
                   className="retry-button w-full"
                 >
                   Try Again
                 </button>
-                <button 
+                <button
                   onClick={this.props.onToggle}
                   className="w-full px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
                 >

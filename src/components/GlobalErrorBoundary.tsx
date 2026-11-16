@@ -4,6 +4,7 @@ import { errorTracking } from '../utils/error-tracking';
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  addLog?: (message: string, level?: 'info' | 'warning' | 'error' | 'debug', source?: string, metadata?: Record<string, any>) => void;
 }
 
 interface State {
@@ -40,6 +41,19 @@ export class GlobalErrorBoundary extends Component<Props, State> {
       errorInfo
     });
 
+    // Add error to logs context if available
+    if (this.props.addLog) {
+      this.props.addLog(
+        `React Error: ${error.message}`,
+        'error',
+        'GlobalErrorBoundary',
+        {
+          stack: error.stack,
+          componentStack: errorInfo.componentStack
+        }
+      );
+    }
+
     // Also log to console in development
     if (process.env.NODE_ENV === 'development') {
       console.error('🚨 Global Error Boundary caught error:', error);
@@ -58,6 +72,14 @@ export class GlobalErrorBoundary extends Component<Props, State> {
       action: 'error_boundary_retry',
       previousError: this.state.error?.message
     });
+
+    if (this.props.addLog) {
+      this.props.addLog(
+        'User retried after error',
+        'info',
+        'GlobalErrorBoundary'
+      );
+    }
   };
 
   private handleReload = (): void => {
@@ -66,6 +88,14 @@ export class GlobalErrorBoundary extends Component<Props, State> {
       action: 'error_boundary_reload',
       previousError: this.state.error?.message
     });
+
+    if (this.props.addLog) {
+      this.props.addLog(
+        'User reloaded page after error',
+        'info',
+        'GlobalErrorBoundary'
+      );
+    }
 
     // Reload the page
     window.location.reload();
@@ -84,6 +114,14 @@ export class GlobalErrorBoundary extends Component<Props, State> {
       url: window.location.href,
       timestamp: new Date().toISOString()
     });
+
+    if (this.props.addLog) {
+      this.props.addLog(
+        'User reported error',
+        'info',
+        'GlobalErrorBoundary'
+      );
+    }
 
     alert('Error report sent. Thank you for helping us improve the application!');
   };
@@ -106,7 +144,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
               <p className="text-gray-600 mb-6">
                 We're sorry, but something unexpected happened. The error has been reported automatically.
               </p>
-              
+
               {/* Error details in development */}
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mb-6 text-left">
@@ -134,7 +172,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                 >
                   Try Again
                 </button>
-                
+
                 <div className="flex gap-2">
                   <button
                     onClick={this.handleReload}
@@ -142,7 +180,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                   >
                     Reload Page
                   </button>
-                  
+
                   <button
                     onClick={this.handleReport}
                     className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"

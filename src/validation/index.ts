@@ -1,11 +1,11 @@
 // Runtime type validation with comprehensive error handling and AI feedback generation
-import type { 
-  PrinterData, 
-  PrintersResponse, 
-  LabelPreviewData, 
-  DiscoveryResponse, 
-  ManualConnectionResult, 
-  PrintRequest 
+import type {
+  PrinterData,
+  PrintersResponse,
+  LabelPreviewData,
+  DiscoveryResponse,
+  ManualConnectionResult,
+  PrintRequest
 } from '../types';
 
 // Custom ValidationError class with comprehensive debugging support
@@ -18,7 +18,7 @@ export class ValidationError extends Error {
     this.name = 'ValidationError';
     this.validationErrors = validationErrors;
     this.receivedData = receivedData;
-    
+
     // Ensure proper inheritance in TypeScript/JavaScript
     Object.setPrototypeOf(this, ValidationError.prototype);
   }
@@ -58,7 +58,7 @@ export class ValidationError extends Error {
     ];
 
     let suggestion = 'Unknown validation pattern';
-    
+
     for (const { pattern, feedback } of commonPatterns) {
       if (pattern.test(this.message)) {
         suggestion = feedback;
@@ -76,7 +76,7 @@ export class ValidationError extends Error {
       })),
       receivedData: this.receivedData,
       suggestion: suggestion
-    }, (key, value) => {
+    }, (_key, value) => {
       if (value === undefined) {
         return null;
       }
@@ -90,11 +90,11 @@ export class TypeValidator {
   // Typia runtime type validation for PrinterData (Node-generated)
   static validatePrinterData(data: any) {
     const errors: Array<{ path: string; expected: string; value: any }> = [];
-    
+
     if (data === null || typeof data !== "object") {
       throw new ValidationError('Expected object, got ' + typeof data, [], data);
     }
-    
+
     if (typeof data.status !== "string") {
       errors.push({ path: "$input.status", expected: "string", value: data.status });
     }
@@ -145,7 +145,7 @@ export class TypeValidator {
   // Typia runtime type validation for PrintersResponse (Node-generated)
   static validatePrintersResponse(data: any) {
     const errors: Array<{ path: string; expected: string; value: any }> = [];
-    
+
     if (data === null || typeof data !== "object") {
       throw new ValidationError('Expected object, got ' + typeof data, [], data);
     }
@@ -186,7 +186,7 @@ export class TypeValidator {
   // Typia runtime type validation for LabelPreviewData (Node-generated)
   static validateLabelPreviewData(data: any) {
     const errors: Array<{ path: string; expected: string; value: any }> = [];
-    
+
     if (data === null || typeof data !== "object") {
       throw new ValidationError('Expected object, got ' + typeof data, [], data);
     }
@@ -207,10 +207,10 @@ export class TypeValidator {
     } else {
       data.full_labels.forEach((label: any, index: number) => {
         if (typeof label !== "string") {
-          errors.push({ 
-            path: `$input.full_labels[${index}]`, 
-            expected: "string", 
-            value: label 
+          errors.push({
+            path: `$input.full_labels[${index}]`,
+            expected: "string",
+            value: label
           });
         }
       });
@@ -221,10 +221,10 @@ export class TypeValidator {
     } else {
       data.small_labels.forEach((label: any, index: number) => {
         if (typeof label !== "string") {
-          errors.push({ 
-            path: `$input.small_labels[${index}]`, 
-            expected: "string", 
-            value: label 
+          errors.push({
+            path: `$input.small_labels[${index}]`,
+            expected: "string",
+            value: label
           });
         }
       });
@@ -244,7 +244,7 @@ export class TypeValidator {
   // Typia runtime type validation for DiscoveryResponse (Node-generated)
   static validateDiscoveryResponse(data: any) {
     const errors: Array<{ path: string; expected: string; value: any }> = [];
-    
+
     if (data === null || typeof data !== "object") {
       throw new ValidationError('Expected object, got ' + typeof data, [], data);
     }
@@ -292,7 +292,7 @@ export class TypeValidator {
   // Typia runtime type validation for ManualConnectionResult (Node-generated)
   static validateManualConnectionResult(data: any) {
     const errors: Array<{ path: string; expected: string; value: any }> = [];
-    
+
     if (data === null || typeof data !== "object") {
       throw new ValidationError('Expected object, got ' + typeof data, [], data);
     }
@@ -336,7 +336,7 @@ export class TypeValidator {
   // Typia runtime type validation for PrintRequest (Node-generated)
   static validatePrintRequest(data: any) {
     const errors: Array<{ path: string; expected: string; value: any }> = [];
-    
+
     if (data === null || typeof data !== "object") {
       throw new ValidationError('Expected object, got ' + typeof data, [], data);
     }
@@ -369,14 +369,14 @@ export class TypeValidator {
   }
 
   // Generic validation method for compatibility with Typia API
-  static validate<T>(data: unknown, typeName?: string): T {
+  static validate<T>(data: unknown): T {
     // For now, just return the data as-is since we don't have runtime type info
     // In a real Typia implementation, this would use the type parameter
     return data as T;
   }
 
   // Assert method that throws if validation fails
-  static assert<T>(data: unknown, typeName?: string): T {
+  static assert<T>(data: unknown): T {
     // For now, just return the data as-is since we don't have runtime type info
     // In a real Typia implementation, this would validate and throw if invalid
     return data as T;
@@ -393,7 +393,7 @@ export class ValidationReporter {
     console.error('Debug Info:', error.toDebugInfo());
     console.error('AI Feedback:', error.toAIFeedback());
     console.error('Stack trace:', error.stack);
-    
+
     // Store for analysis
     this.validationHistory.push(error);
   }
@@ -401,13 +401,13 @@ export class ValidationReporter {
   // Report validation error with cross-system logging
   static reportError(error: ValidationError): void {
     this.logValidationError(error);
-    
+
     // Log as string to match test expectations
     console.log('VALIDATION_ERROR:', JSON.stringify(error.toDebugInfo()));
-    
+
     // Send to backend for centralized logging
     this.sendToBackend(error);
-    
+
     // Store in localStorage for development debugging
     if (typeof localStorage !== 'undefined') {
       const feedback = error.toAIFeedback();
@@ -416,7 +416,7 @@ export class ValidationReporter {
         timestamp: new Date().toISOString(),
         feedback: feedback  // Store feedback as the root property to match test expectations
       });
-      
+
       // Keep only the last 50 errors to prevent localStorage bloat
       const recentLogs = existingLogs.slice(-50);
       localStorage.setItem('typia_validation_errors', JSON.stringify(recentLogs));
@@ -486,7 +486,7 @@ export class ValidationReporter {
     // Generate AI feedback and log it
     const aiFeedback = error.toAIFeedback();
     console.log('AI_FEEDBACK:', aiFeedback);
-    
+
     // Also call the main reportError method
     this.reportError(error);
   }

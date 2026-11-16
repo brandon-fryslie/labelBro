@@ -1,0 +1,648 @@
+# labelBro Project Backlog
+**Generated:** 2025-10-15-044655
+**Source STATUS:** STATUS-2025-10-15-044325.md
+**Specification:** PROJECT.md + CLAUDE.md (labelBro root)
+
+---
+
+## Executive Summary
+
+**Current State:** 78% complete, NOT production ready
+**Test Pass Rate:** 98.2% (112/114 tests)
+**Bundle Size:** 368 KB (26% below target - EXCELLENT)
+**Critical Blockers:** 4 high-severity issues preventing production deployment
+
+**Estimated Time to Production:** 9-13 hours of focused work
+
+**Focus Areas:**
+1. **P0 Critical Blockers** (9-13 hours) - Fix logs system, TypeScript strict mode, test failures
+2. **P1 Quality Improvements** (5-8 hours) - Clean up unused code, fix deprecation warnings
+3. **P2 Optimization** (3-5 hours) - Bundle size reduction, test coverage improvements
+4. **P3 Documentation** (2-3 hours) - Update outdated claims, improve docs
+
+---
+
+## Backlog by Priority
+
+### P0 (CRITICAL) - Production Blockers
+
+#### P0-001: Fix Non-Functional Logs System
+**Status**: Not Started
+**Effort**: Large (4-6 hours)
+**Dependencies**: None
+**Spec Reference**: PROJECT.md (Logs Panel requirement) • **Status Reference**: STATUS-2025-10-15-044325.md §"Critical Finding #1"
+
+**Description**
+The logs system is completely non-functional despite components existing. LogsPanel receives hardcoded empty array, LogsBar displays placeholder text "Log messages will appear here...", and the LogEntry type is not exported from types/index.ts. This violates CLAUDE.md's prohibition on fake demo data and prevents users from seeing application errors or status messages.
+
+**Evidence from STATUS:**
+- `src/components/App.tsx:72` - `<LazyLogsPanel logs={[]} />` (hardcoded empty array)
+- `src/components/LogsBar.tsx:21` - Placeholder text instead of real data
+- TypeScript errors: "Module has no exported member 'LogEntry'" in 2 files
+
+**Acceptance Criteria**
+- [ ] Export LogEntry type from `src/types/index.ts` with fields: timestamp, level, message, source
+- [ ] Create logs state management in AppContext (useContext pattern)
+- [ ] Implement logs collection from frontend events (errors, warnings, info)
+- [ ] Add backend endpoint `/api/logs` to retrieve server-side logs (if doesn't exist)
+- [ ] Connect LogsPanel to real log data from context (remove hardcoded empty array)
+- [ ] Remove placeholder text from LogsBar and display actual recent log
+- [ ] Test log display with real error scenarios (network errors, printer failures)
+- [ ] Verify TypeScript compilation passes with LogEntry type fixes
+- [ ] Integration test: Logs appear when errors occur in UI
+
+**Technical Notes**
+- LogEntry type likely exists somewhere but wasn't added to types/index.ts exports
+- May need to create LogsContext provider wrapping App component
+- Backend may already have logging infrastructure; check for existing log endpoints
+- Follow pattern used by HistoryPanel for state management reference
+
+---
+
+#### P0-002: Fix TypeScript Strict Mode Violations
+**Status**: Not Started
+**Effort**: Medium (2-3 hours)
+**Dependencies**: P0-001 (LogEntry type export)
+**Spec Reference**: CLAUDE.md (TypeScript strict mode requirement) • **Status Reference**: STATUS-2025-10-15-044325.md §"Critical Finding #2"
+
+**Description**
+Despite `tsconfig.json` having `"strict": true"`, running `npm run typecheck` produces 18 compilation errors (6 fatal type errors + 12 unused variable warnings). The build succeeds because esbuild ignores TypeScript errors, creating illusory type safety. STATUS.md falsely claims "100% strict mode compliance."
+
+**Evidence from STATUS:**
+```
+src/api/index.ts(4,3): error TS6133: 'PrintersResponse' is declared but never read
+src/components/LazyHistoryPanel.tsx(111,6): error TS2375: Type incompatibility with exactOptionalPropertyTypes
+src/components/LazyLogsPanel.tsx(2,10): error TS2305: Module has no exported member 'LogEntry'
+src/components/LogsPanel.tsx(2,10): error TS2305: Module has no exported member 'LogEntry'
+src/hooks/useLabels.ts(66,9): error TS2375: Type incompatibility with exactOptionalPropertyTypes
+src/utils/error-tracking.ts(48,12): error TS2379: Argument type incompatibility
+```
+Plus 12 unused import warnings.
+
+**Acceptance Criteria**
+- [ ] Fix LogEntry type export errors (2 files) - covered by P0-001
+- [ ] Fix exactOptionalPropertyTypes violations in LazyHistoryPanel.tsx (2 occurrences)
+- [ ] Fix exactOptionalPropertyTypes violation in useLabels.ts
+- [ ] Fix Sentry initialization type incompatibility in error-tracking.ts
+- [ ] Remove all unused imports and variables (12 occurrences across 6 files)
+- [ ] Run `npm run typecheck` - must pass with 0 errors
+- [ ] Add `npm run typecheck` to CI/CD pipeline (package.json scripts or GitHub Actions)
+- [ ] Update STATUS.md to remove false "100% strict mode compliance" claim
+- [ ] Verify `npm run build` still succeeds after fixes
+
+**Technical Notes**
+- exactOptionalPropertyTypes errors occur when optional props have `| undefined` - remove the explicit undefined
+- For Sentry type issues, may need to update @sentry/react version or adjust initialization options
+- Use ESLint auto-fix for most unused variable removals: `npm run lint -- --fix`
+- Files affected by unused imports: api/index.ts, HistoryPanel.tsx, PrinterPanel.tsx, useLocalStorage.ts, main.tsx, error-tracking.ts
+
+**Files to Fix:**
+1. `src/api/index.ts` - Remove unused PrintersResponse
+2. `src/components/HistoryPanel.tsx` - Remove unused state, historyCount
+3. `src/components/PrinterPanel.tsx` - Remove unused useState, togglePrinterPanel, connectionStatus
+4. `src/components/LazyHistoryPanel.tsx` - Fix exactOptionalPropertyTypes (line 111)
+5. `src/hooks/useLabels.ts` - Fix exactOptionalPropertyTypes (line 66)
+6. `src/hooks/useLocalStorage.ts` - Remove unused useEffect
+7. `src/main.tsx` - Remove unused React import
+8. `src/utils/error-tracking.ts` - Remove unused getCurrentScope, fix Sentry init types
+
+---
+
+#### P0-003: Fix Integration Test Failures
+**Status**: Not Started
+**Effort**: Medium (3-4 hours)
+**Dependencies**: None
+**Spec Reference**: TESTING.md (integration tests) • **Status Reference**: STATUS-2025-10-15-044325.md §"Test Failures"
+
+**Description**
+2 integration tests failing due to backend error response format not matching TypeScript type contracts. When backend returns errors, it sends `{ error: 'Server error' }` but TypeScript types expect `{ success: boolean, data: {...} }`. This creates runtime type validation failures and prevents proper error handling.
+
+**Evidence from STATUS:**
+```
+Test Suite: tests/integration/printer-discovery-workflow.test.ts
+Failure 1: Network timeout error handling - console.error shows error but test expects throw
+Failure 2: Validation error for server error response
+  Expected: { success: boolean, data: {...} }
+  Received: { error: 'Server error' }
+```
+
+**Acceptance Criteria**
+- [ ] Standardize Flask backend error response format across all endpoints
+- [ ] Backend error format: `{ success: false, error: { code: string, message: string } }`
+- [ ] Update DiscoveryResponse type to include error cases properly
+- [ ] Update all API response types to handle error format consistently
+- [ ] Fix network timeout handling in API client (should catch and transform errors)
+- [ ] Verify all Flask endpoints return consistent format (check /printers, /preview, /print_labels, /discover)
+- [ ] Update integration tests to match actual backend behavior
+- [ ] Run full test suite: `pytest` must show 114/114 passing
+- [ ] Document error response format in API documentation
+
+**Technical Notes**
+- Flask backend files to update: label_bro/app.py (all route handlers)
+- TypeScript types to update: src/types/index.ts (all *Response types)
+- Consider creating a standard error response wrapper in Flask
+- May need to update API client error handling in src/api/index.ts
+
+**Backend Endpoints to Audit:**
+1. `/printers` - GET printer list
+2. `/printers/discover` - POST full discovery
+3. `/printers/test` - POST manual connection test
+4. `/preview` - POST label preview
+5. `/print_labels` - POST print job
+
+---
+
+#### P0-004: Fix Brother QL Deprecation Warning
+**Status**: Not Started
+**Effort**: Medium (2-3 hours)
+**Dependencies**: None
+**Spec Reference**: N/A (library maintenance) • **Status Reference**: STATUS-2025-10-15-044325.md §"Code Quality Issues"
+
+**Description**
+Backend uses deprecated `brother_ql.devicedependent` module which will be removed in future library release. This will cause complete printer functionality failure when brother_ql updates.
+
+**Evidence from STATUS:**
+```
+deprecation warning: brother_ql.devicedependent is deprecated and will be removed in a future release
+File: label_bro/utils/printer_utils.py
+```
+
+**Acceptance Criteria**
+- [ ] Identify all usages of brother_ql.devicedependent in codebase
+- [ ] Review brother_ql library documentation for replacement API
+- [ ] Migrate to current brother_ql API (check brother_ql v0.9.x changelog)
+- [ ] Update printer_utils.py with new API calls
+- [ ] Test printer discovery with actual Brother QL-800 printer (if available)
+- [ ] Test label printing with actual hardware (if available)
+- [ ] Update documentation with new API usage patterns
+- [ ] Verify no deprecation warnings in server startup logs
+- [ ] Run backend tests: `pytest tests/` must pass
+
+**Technical Notes**
+- Check brother_ql GitHub: https://github.com/pklaus/brother_ql
+- Likely need to replace devicedependent imports with new model-specific modules
+- May affect printer model detection logic
+- If no printer hardware available, use brother_ql test fixtures
+
+---
+
+### P1 (HIGH) - Quality Improvements
+
+#### P1-001: Remove Unused Imports and Variables
+**Status**: Not Started
+**Effort**: Small (1 hour)
+**Dependencies**: Subset of P0-002
+**Spec Reference**: CLAUDE.md (code quality) • **Status Reference**: STATUS-2025-10-15-044325.md §"Code Quality Issues"
+
+**Description**
+12 unused imports and variables across 6 files increase bundle size marginally and reduce code maintainability. These are all caught by TypeScript compiler (TS6133 warnings).
+
+**Evidence from STATUS:**
+- src/api/index.ts: Unused 'PrintersResponse'
+- src/components/HistoryPanel.tsx: Unused 'state', 'historyCount'
+- src/components/PrinterPanel.tsx: Unused 'useState', 'togglePrinterPanel', 'connectionStatus'
+- src/hooks/useLocalStorage.ts: Unused 'useEffect'
+- src/main.tsx: Unused 'React'
+- src/utils/error-tracking.ts: Unused 'getCurrentScope'
+
+**Acceptance Criteria**
+- [ ] Run ESLint auto-fix: `npm run lint -- --fix`
+- [ ] Manually verify each unused import/variable can be safely removed
+- [ ] Remove all 12 unused imports/variables
+- [ ] Run `npm run typecheck` - should reduce error count
+- [ ] Run tests to ensure no regressions
+- [ ] Bundle size should decrease slightly (measure before/after)
+
+**Technical Notes**
+- This is a subset of P0-002 work, can be done independently
+- Use `git diff` to verify only expected changes
+- Some unused imports may indicate incomplete features - investigate before removing
+
+---
+
+#### P1-002: Update Outdated Status Documentation
+**Status**: Not Started
+**Effort**: Small (1 hour)
+**Dependencies**: P0-002, P0-003 (to confirm actual final state)
+**Spec Reference**: N/A (documentation accuracy) • **Status Reference**: STATUS-2025-10-15-044325.md §"Reality Check"
+
+**Description**
+STATUS.md and TODO.md contain false or outdated claims that mislead developers about project state.
+
+**Evidence from STATUS:**
+**False Claims in STATUS.md:**
+- "TypeScript Strict Mode: 100% compliance" - ACTUALLY: 18 compilation errors
+- "Test Suite: 69% pass rate" - ACTUALLY: 98.2% pass rate
+- "Bundle Size: 1.0MB" - ACTUALLY: 368 KB
+
+**Incomplete Claims in TODO.md:**
+- "ET-001: Error tracking integration (Starting...)" - ACTUALLY: Sentry configured but has type errors
+- "TS-001: TypeScript strict mode" - ACTUALLY: Enabled but not passing
+
+**Acceptance Criteria**
+- [ ] Create accurate STATUS.md documenting current state post-fixes
+- [ ] Document actual test pass rate (should be 100% after P0-003)
+- [ ] Document actual bundle size (368 KB)
+- [ ] Document actual TypeScript strict mode compliance (should be 100% after P0-002)
+- [ ] Update TODO.md to remove completed items
+- [ ] Add completed items to DEPRECATED.md if they're no longer relevant
+- [ ] Cross-reference all claims with evidence from test runs and builds
+
+**Technical Notes**
+- Generate new STATUS file using project-evaluator after all P0 fixes complete
+- Archive old STATUS files following evaluator retention policy (keep latest 4)
+- Consider automating status generation as part of CI/CD
+
+---
+
+### P2 (MEDIUM) - Optimizations
+
+#### P2-001: Optimize Sentry Bundle Size
+**Status**: Not Started
+**Effort**: Medium (3-5 hours)
+**Dependencies**: None
+**Spec Reference**: Bundle optimization goals • **Status Reference**: STATUS-2025-10-15-044325.md §"Bundle Optimization Status"
+
+**Description**
+Sentry integrations contribute ~110 KB (35%) of the 368 KB bundle. Many integrations (Replay, Feedback, Canvas) may not be actively used. Removing unused integrations could save 50-80 KB.
+
+**Evidence from STATUS:**
+```
+Bundle Composition:
+- React DOM: 169 KB (53.6%)
+- Sentry (all): ~110 KB (35%)
+  - Replay: 75 KB
+  - Feedback: 19 KB
+  - Canvas: 8 KB
+  - Core: 8 KB
+- App Code: ~37 KB (11.7%)
+```
+
+**Acceptance Criteria**
+- [ ] Audit Sentry integration usage in src/utils/error-tracking.ts
+- [ ] Determine which integrations are actually used (Replay, Feedback, Canvas)
+- [ ] Remove unused Sentry integrations from initialization
+- [ ] Remove unused Sentry imports from error-tracking.ts
+- [ ] Build and measure new bundle size: `npm run build`
+- [ ] Target: Reduce bundle to 290-320 KB (50-80 KB savings)
+- [ ] Verify error tracking still works in browser
+- [ ] Test Sentry error reporting with manual error trigger
+- [ ] Update documentation with Sentry integration decisions
+
+**Technical Notes**
+- Sentry Replay (75 KB) is largest - determine if session replay is needed
+- Sentry Feedback (19 KB) - user feedback widget, may not be used
+- Sentry Canvas (8 KB) - canvas recording, likely not needed
+- Keep Sentry Core and Browser integration (required for error tracking)
+- Check if SENTRY_DSN environment variable is even set in production
+
+---
+
+#### P2-002: Improve Component Test Coverage
+**Status**: Not Started
+**Effort**: Large (6-8 hours)
+**Dependencies**: None
+**Spec Reference**: TESTING.md (coverage goals) • **Status Reference**: STATUS-2025-10-15-044325.md §"Missing Features"
+
+**Description**
+24 React components have 0% test coverage. While integration tests cover workflows, component-level tests improve regression safety and refactoring confidence. Focus on critical components first.
+
+**Evidence from STATUS:**
+- Test coverage: Excellent for backend (98.2% pass rate, 114 tests)
+- Component coverage: 0% for 24 components
+- Critical untested components: ErrorDisplay, GlobalErrorBoundary, PrintButton
+
+**Acceptance Criteria**
+- [ ] Add tests for ErrorDisplay component (error state rendering)
+- [ ] Add tests for GlobalErrorBoundary (error catching, fallback UI)
+- [ ] Add tests for PrintButton (disabled states, click handling)
+- [ ] Add tests for LogsPanel (after P0-001 fixes, test log filtering/display)
+- [ ] Add tests for LogsBar (after P0-001 fixes, test recent log display)
+- [ ] Target: 50% component coverage minimum (12/24 components)
+- [ ] Use React Testing Library (already in dependencies)
+- [ ] Follow existing test patterns in tests/integration/
+- [ ] All new tests must pass: `npm test`
+
+**Technical Notes**
+- Focus on components with user interaction or error handling logic
+- Don't test trivial presentational components (waste of effort)
+- Use test fixtures from tests/fixtures/ for consistency
+- Consider component tests as documentation of component behavior
+
+**Priority Component Test Order:**
+1. GlobalErrorBoundary (critical error handling)
+2. ErrorDisplay (user-facing error messages)
+3. PrintButton (primary user action)
+4. LogsPanel (after P0-001 complete)
+5. LogsBar (after P0-001 complete)
+
+---
+
+#### P2-003: Additional Code Splitting Opportunities
+**Status**: Not Started
+**Effort**: Medium (3-4 hours)
+**Dependencies**: None
+**Spec Reference**: Bundle optimization • **Status Reference**: STATUS-2025-10-15-044325.md §"Bundle Optimization"
+
+**Description**
+While 5 components are already lazy-loaded, additional components (HelpModal, HistoryPanel) could be code-split for 35-50 KB savings. Current code splitting is excellent but can be improved.
+
+**Evidence from STATUS:**
+- Already code-split: LazyPrinterPanel, LazyLabelPreview, LazyHelpModal, LazyHistoryPanel, LazyLogsPanel
+- Opportunities: Further splitting of modal content, history data visualization
+
+**Acceptance Criteria**
+- [ ] Audit component bundle contributions (use webpack-bundle-analyzer or similar)
+- [ ] Identify heavy components not yet split (>10 KB)
+- [ ] Implement lazy loading for identified components
+- [ ] Add loading fallbacks for new lazy components
+- [ ] Test loading states in slow network conditions
+- [ ] Build and measure bundle size reduction
+- [ ] Target: Additional 35-50 KB savings
+- [ ] Verify no degradation in user experience (loading delays)
+
+**Technical Notes**
+- Current lazy loading uses React.lazy() and Suspense - follow same pattern
+- May have diminishing returns - prioritize P0/P1 work first
+- Consider route-based splitting if app grows to multiple pages
+- Monitor Core Web Vitals impact (performance-monitor.ts)
+
+---
+
+### P3 (LOW) - Documentation & Polish
+
+#### P3-001: Add API Documentation
+**Status**: Not Started
+**Effort**: Medium (2-3 hours)
+**Dependencies**: P0-003 (standardized error formats)
+**Spec Reference**: BACKLOG.md (documentation needs) • **Status Reference**: N/A
+
+**Description**
+Flask API endpoints are functional but lack comprehensive documentation. After standardizing error response formats (P0-003), document all endpoints with request/response schemas.
+
+**Acceptance Criteria**
+- [ ] Document all Flask endpoints in API.md (or similar)
+- [ ] Include request schemas (JSON body structure, query params)
+- [ ] Include response schemas (success and error cases)
+- [ ] Include example curl commands for each endpoint
+- [ ] Document error codes and their meanings
+- [ ] Include authentication/authorization requirements (if any)
+- [ ] Link from PROJECT.md or README.md
+
+**Endpoints to Document:**
+1. `GET /printers` - List available printers
+2. `POST /printers/discover` - Run full discovery
+3. `POST /printers/test` - Test manual connection
+4. `POST /preview` - Generate label preview
+5. `POST /print_labels` - Print labels
+
+**Technical Notes**
+- Use OpenAPI/Swagger format if planning to add more endpoints
+- Include TypeScript types alongside API docs for reference
+- Consider using Flask-RESTX or similar for auto-generated docs
+
+---
+
+#### P3-002: Improve User Error Messages
+**Status**: Not Started
+**Effort**: Small (2 hours)
+**Dependencies**: P0-001 (logs system functional)
+**Spec Reference**: BACKLOG.md (UI/UX improvements) • **Status Reference**: N/A
+
+**Description**
+Current error messages may be too technical for end users. After logs system is functional (P0-001), audit error messages for user-friendliness.
+
+**Acceptance Criteria**
+- [ ] Audit all user-facing error messages in frontend
+- [ ] Replace technical errors with user-friendly messages
+- [ ] Provide actionable steps for common errors (e.g., "Check printer is powered on")
+- [ ] Test error messages with non-technical user
+- [ ] Add contextual help links where appropriate
+- [ ] Verify error messages appear in LogsPanel and ErrorDisplay
+
+**Technical Notes**
+- Keep technical details in logs for debugging, show simple version to user
+- Consider error message library or centralized error message definitions
+- Test error messages by triggering actual errors (network failures, printer offline)
+
+---
+
+## Dependency Graph
+
+```
+P0-001 (Logs System)
+  └─> P0-002 (TypeScript Strict Mode) [LogEntry type dependency]
+  └─> P2-002 (Component Tests) [LogsPanel/LogsBar tests depend on functional logs]
+
+P0-002 (TypeScript Strict Mode)
+  └─> P1-001 (Unused Imports) [subset of P0-002]
+  └─> P1-002 (Status Docs) [need final state after fixes]
+
+P0-003 (Integration Tests)
+  └─> P1-002 (Status Docs) [need 100% pass rate]
+  └─> P3-001 (API Docs) [document standardized error format]
+
+P0-004 (Brother QL Deprecation)
+  [No dependencies]
+
+P2-001 (Sentry Optimization)
+  [No dependencies]
+
+P2-002 (Component Tests)
+  └─> P0-001 (Logs System) [LogsPanel/LogsBar tests]
+
+P2-003 (Code Splitting)
+  [No dependencies]
+
+P3-001 (API Documentation)
+  └─> P0-003 (Integration Tests) [document standardized formats]
+
+P3-002 (User Error Messages)
+  └─> P0-001 (Logs System) [need logs to display errors]
+```
+
+---
+
+## Recommended Sprint Planning
+
+### Sprint 1: Production Blockers (Week 1)
+**Goal:** Fix all P0 blockers, achieve production readiness
+**Duration:** 9-13 hours
+
+**Tasks:**
+1. P0-001: Fix Logs System (4-6 hours)
+2. P0-002: Fix TypeScript Strict Mode (2-3 hours)
+3. P0-003: Fix Integration Test Failures (3-4 hours)
+4. P0-004: Fix Brother QL Deprecation (2-3 hours)
+
+**Success Metrics:**
+- [ ] All 114 tests passing (100% pass rate)
+- [ ] `npm run typecheck` passes with 0 errors
+- [ ] Logs system fully functional (no fake data)
+- [ ] No deprecation warnings in server logs
+- [ ] Ready for production deployment
+
+**Sprint 1 Review Checklist:**
+- [ ] Manual browser testing completed
+- [ ] Actual printer connectivity tested (if hardware available)
+- [ ] All P0 acceptance criteria met
+- [ ] Generate new STATUS report with project-evaluator
+- [ ] Update PROGRESS.md with milestone completion
+
+---
+
+### Sprint 2: Quality & Optimization (Week 2)
+**Goal:** Improve code quality and bundle performance
+**Duration:** 9-13 hours
+
+**Tasks:**
+1. P1-001: Remove Unused Code (1 hour)
+2. P1-002: Update Documentation (1 hour)
+3. P2-001: Sentry Bundle Optimization (3-5 hours)
+4. P2-002: Component Test Coverage (6-8 hours) - focus on top 5 critical components
+
+**Success Metrics:**
+- [ ] Bundle size reduced to <320 KB (from 368 KB)
+- [ ] 50% component test coverage (12/24 components)
+- [ ] All documentation accurate and up-to-date
+- [ ] No unused code in codebase
+
+**Sprint 2 Review Checklist:**
+- [ ] Bundle analysis shows size reduction
+- [ ] Component tests provide meaningful coverage
+- [ ] Documentation reviewed for accuracy
+- [ ] Generate new STATUS report
+
+---
+
+### Sprint 3: Polish & Future-Proofing (Optional)
+**Goal:** Documentation and user experience improvements
+**Duration:** 4-5 hours
+
+**Tasks:**
+1. P3-001: API Documentation (2-3 hours)
+2. P3-002: User Error Messages (2 hours)
+3. P2-003: Additional Code Splitting (if time permits)
+
+**Success Metrics:**
+- [ ] Complete API documentation published
+- [ ] User-friendly error messages throughout app
+- [ ] Additional bundle size improvements (if P2-003 completed)
+
+---
+
+## Risk Assessment
+
+### High-Risk Items Requiring Investigation
+
+**Risk 1: Backend Logs Endpoint May Not Exist**
+**Item:** P0-001 (Logs System)
+**Risk Level:** HIGH
+**Mitigation:** Check Flask app.py for `/api/logs` endpoint. If missing, need to implement backend log aggregation before frontend integration.
+**Investigation Needed:** Audit Flask routes for existing log endpoints.
+
+**Risk 2: Brother QL API Changes May Require Significant Refactoring**
+**Item:** P0-004 (Brother QL Deprecation)
+**Risk Level:** MEDIUM
+**Mitigation:** Review brother_ql changelog and migration guide before starting. May need to update multiple files beyond printer_utils.py.
+**Investigation Needed:** Check brother_ql GitHub issues for migration examples.
+
+**Risk 3: Sentry Integration Removal May Break Error Reporting**
+**Item:** P2-001 (Sentry Optimization)
+**Risk Level:** MEDIUM
+**Mitigation:** Remove integrations incrementally, test error reporting after each removal. Keep backups of Sentry config.
+**Investigation Needed:** Verify Sentry is actually being used in production (check for SENTRY_DSN env var).
+
+**Risk 4: exactOptionalPropertyTypes Fixes May Require Type System Redesign**
+**Item:** P0-002 (TypeScript Strict Mode)
+**Risk Level:** LOW-MEDIUM
+**Mitigation:** Review TypeScript 4.4+ exactOptionalPropertyTypes documentation. May need to remove `| undefined` from optional props across multiple files.
+**Investigation Needed:** Audit type definitions for optional property patterns.
+
+### Unknown/Uncertain Items
+
+**Unknown 1: Actual Printer Hardware Availability**
+**Impact:** Cannot fully test P0-004 (Brother QL fixes) without actual printer
+**Mitigation:** Use brother_ql test fixtures, mock printer responses
+**Decision Needed:** User must confirm if Brother QL-800 printer is available for testing
+
+**Unknown 2: Production Sentry Configuration**
+**Impact:** Cannot optimize P2-001 without knowing what Sentry features are actually used
+**Mitigation:** Audit production environment variables, check Sentry dashboard for active integrations
+**Decision Needed:** User must provide production Sentry configuration details
+
+---
+
+## Production Readiness Checklist
+
+**Before deploying to production, ALL items must be checked:**
+
+### Critical Functionality
+- [ ] All TypeScript strict mode errors fixed (P0-002)
+- [ ] Logs system fully functional (P0-001)
+- [ ] All 114 tests passing 100% (P0-003)
+- [ ] No deprecation warnings (P0-004)
+- [ ] Manual browser testing completed
+- [ ] Actual printer connectivity tested
+
+### Code Quality
+- [ ] No unused imports/variables (P1-001)
+- [ ] All documentation accurate (P1-002)
+- [ ] Error response format standardized (P0-003)
+- [ ] TypeScript compilation enforced in CI/CD (P0-002)
+
+### Performance
+- [ ] Bundle size ≤ 500 KB (currently 368 KB ✅)
+- [ ] Core Web Vitals within acceptable range
+- [ ] Code splitting working correctly
+- [ ] Lazy loading tested on slow networks
+
+### Infrastructure
+- [ ] Production environment variables configured
+- [ ] Sentry error tracking operational (if used)
+- [ ] Performance monitoring operational
+- [ ] Health check endpoints tested
+- [ ] Backend server stability verified
+
+### Documentation
+- [ ] API documentation complete (P3-001)
+- [ ] User manual updated
+- [ ] STATUS.md reflects actual state (P1-002)
+- [ ] DEPRECATED.md lists retired components
+
+---
+
+## Notes
+
+### File Management Actions Taken
+This backlog was generated from the authoritative STATUS-2025-10-15-044325.md evaluation report. The following outdated/conflicting planning files will be archived:
+
+**Files to Archive:**
+- `BACKLOG.md` - Outdated backlog claiming auto-discovery is "completed" but missing all P0 critical blockers identified in STATUS
+- `TODO.md` - Contains only "code-quality" with no specifics; conflicts with detailed STATUS findings
+
+**Archive Process:**
+1. Create `archive/` directory if not exists
+2. Move `BACKLOG.md` → `archive/BACKLOG.md.archived`
+3. Move `TODO.md` → `archive/TODO.md.archived`
+4. These files are preserved for historical reference but removed from active planning
+
+### Provenance
+- **Source STATUS:** STATUS-2025-10-15-044325.md (generated 2025-10-15-044325)
+- **Specification Sources:**
+  - PROJECT.md (labelBro architecture)
+  - CLAUDE.md (project-level workflow requirements)
+  - ~/.claude/CLAUDE.md (global development standards)
+- **Generation Timestamp:** 2025-10-15-044655
+- **Generator:** project-planner (backlog-generator mode)
+
+### Next Steps
+1. User reviews and approves backlog
+2. Archive outdated planning files (BACKLOG.md, TODO.md)
+3. Begin Sprint 1: P0 blockers
+4. After P0 completion, run project-evaluator again to generate updated STATUS
+5. Begin Sprint 2: Quality & optimization
+
+---
+
+**END OF BACKLOG**

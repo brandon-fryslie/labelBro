@@ -1,5 +1,4 @@
 // Main entry point for labelBro frontend application
-import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './components/App';
 import { TypeScriptErrorReporter } from './utils/error-reporter';
@@ -21,7 +20,7 @@ if (process.env.NODE_ENV === 'development') {
   // Only import performance monitoring in development
   import('./utils/performance-monitor').then(({ performanceMonitor }) => {
     performanceMonitor.markStart('app-initialization');
-    
+
     // Mark app render start before React rendering
     const originalRender = () => {
       performanceMonitor.markStart('app-render');
@@ -30,7 +29,7 @@ if (process.env.NODE_ENV === 'development') {
       performanceMonitor.markEnd('app-render');
       performanceMonitor.markEnd('app-initialization');
     };
-    
+
     // Find container and render with performance monitoring
     const container = document.getElementById('react-root');
     if (container) {
@@ -64,7 +63,7 @@ function renderApp() {
     // Create React root and render the application
     const root = createRoot(container);
     root.render(<App />);
-    
+
     // Log successful initialization
     errorTracking.captureMessage('React application initialized successfully', 'info', {
       initialization: {
@@ -73,7 +72,7 @@ function renderApp() {
         container_found: true
       }
     });
-    
+
   } catch (error) {
     // Capture any initialization errors
     if (error instanceof Error) {
