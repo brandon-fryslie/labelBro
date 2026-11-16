@@ -701,9 +701,10 @@ def _normalize_brother_model_name(discovered_model: str) -> str:
         model_code = int(hex_pattern.group(1), 16)
         print(f"Found hex model code: 0x{model_code:02X}")
 
-        # [LAW:one-source-of-truth] the status-byte model codes live in BrotherProtocol
-        if model_code in BrotherProtocol.MODEL_CODES:
-            detected_model = BrotherProtocol.MODEL_CODES[model_code]
+        # [LAW:one-source-of-truth] the status-byte model codes live in BrotherProtocol; like every other match here,
+        # the model must also be one brother_ql can rasterize for.
+        detected_model = BrotherProtocol.MODEL_CODES.get(model_code)
+        if detected_model in supported_models:
             print(f"Mapped hex code 0x{model_code:02X} to {detected_model}")
             return detected_model
 

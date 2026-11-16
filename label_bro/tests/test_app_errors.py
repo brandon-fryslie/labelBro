@@ -165,3 +165,10 @@ def test_index_serves_the_built_page(client, monkeypatch, tmp_path):
 
     assert response.status_code == 200
     assert response.get_data(as_text=True) == '<div id="react-root"></div>'
+
+
+def test_preview_of_a_word_too_wide_for_the_label_names_the_cause(client):
+    response = client.post("/api/previewLabels", json={"data": {"text": "W" * 300, "shouldPrintSmallLabel": False}})
+
+    assert response.status_code == 500
+    assert "not be suitable for the given width" in response.get_json()["error"]

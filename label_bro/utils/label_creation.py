@@ -46,7 +46,10 @@ def create_full_width_label_image(text: str, width: int) -> cairo.ImageSurface:
             font_size = size
             total_height = total_text_height + 2 * vertical_padding  # Including padding
 
-    if total_text_height == 0:
+    if not words:
+        raise ValueError("Failed to calculate text height. The label text is empty.")
+    if total_height == 0:
+        # not even the smallest font size fit, so there is no height to build a surface from
         raise ValueError("Failed to calculate text height. The provided text may not be suitable for the given width.")
 
     # Round to int

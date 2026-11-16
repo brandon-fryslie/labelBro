@@ -60,3 +60,17 @@ def test_subnet_test_surfaces_a_failed_printer_query(monkeypatch):
 
     with pytest.raises(RuntimeError, match="status read fell over"):
         printer_utils.test_manual_connection("10.0.0.0/29")
+
+
+@pytest.mark.parametrize(
+    "discovered, model",
+    [("QL-810W", "QL-810W"), ("Brother QL-800 (USB)", "QL-800"), ("QL-Series (0x59)", "QL-810W")],
+)
+def test_model_name_normalizes_to_a_brother_ql_model(discovered, model):
+    assert printer_utils._normalize_brother_model_name(discovered) == model
+
+
+def test_status_code_for_a_model_brother_ql_cannot_print_is_rejected():
+    # 0x5D is the QL-1100, which brother_ql has no raster definition for.
+    with pytest.raises(ValueError, match="Unable to determine exact Brother QL printer model"):
+        printer_utils._normalize_brother_model_name("QL-Series (0x5D)")
