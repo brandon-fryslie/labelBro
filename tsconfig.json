@@ -45,8 +45,7 @@
   },
   "include": [
     "src/**/*.ts",
-    "src/**/*.tsx",
-    "label_bro/static/js/**/*.ts"
+    "src/**/*.tsx"
   ],
   "exclude": [
     "node_modules",

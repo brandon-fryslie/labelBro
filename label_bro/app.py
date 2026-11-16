@@ -86,7 +86,7 @@ def index():
     bundle = os.path.join(app.static_folder, FRONTEND_BUNDLE)
     if not os.path.isfile(bundle):
         # [LAW:no-silent-failure] without the bundle the page renders blank; the browser and the server log get the fix instead.
-        raise RuntimeError(f"Frontend bundle not found at {bundle}; run `pnpm install && pnpm build`")
+        raise RuntimeError(f"Frontend bundle static/{FRONTEND_BUNDLE} not built; run `pnpm install && pnpm build`")
     return flask.render_template(
         'index.html',
         custom_message="Yo. I'm your label Bro. Fist bump Bro."

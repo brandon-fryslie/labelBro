@@ -116,7 +116,9 @@ def test_index_without_frontend_bundle_names_the_build_command(client, caplog, m
         response = client.get('/')
 
     assert response.status_code == 500
-    assert 'run `pnpm install && pnpm build`' in response.get_json()['error']
+    error = response.get_json()['error']
+    assert 'run `pnpm install && pnpm build`' in error
+    assert str(tmp_path) not in error
     assert 'GET / 500' in caplog.text
 
 
