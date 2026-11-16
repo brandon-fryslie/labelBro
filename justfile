@@ -128,16 +128,6 @@ test-watch:
     @echo "🧪 Running TypeScript tests in watch mode..."
     npm run test:watch
 
-# Run validation-specific tests for AI feedback
-test-validation:
-    @echo "🤖 Running validation tests for AI feedback..."
-    npm run test:validation
-
-# Run tests with coverage report
-test-coverage:
-    @echo "📊 Running tests with coverage report..."
-    npm run test:coverage
-
 # Show project status
 status:
     @echo "📊 labelBro Project Status"

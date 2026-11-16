@@ -1,3 +1,4 @@
+import type { MockInstance, MockedFunction } from 'vitest';
 /**
  * FUNCTIONAL TEST 1: Logs System End-to-End
  *
@@ -42,19 +43,19 @@ import { LabelBroAPI } from '../../src/api';
 import type { LogEntry } from '../../src/types';
 
 describe('Functional Test: Logs System End-to-End', () => {
-  let mockFetch: jest.MockedFunction<typeof fetch>;
-  let consoleErrorSpy: jest.SpyInstance;
+  let mockFetch: MockedFunction<typeof fetch>;
+  let consoleErrorSpy: MockInstance;
 
   beforeEach(() => {
-    mockFetch = jest.fn(global.fetch) as jest.MockedFunction<typeof fetch>;
+    mockFetch = vi.fn(global.fetch) as MockedFunction<typeof fetch>;
     global.fetch = mockFetch;
 
     // Spy on console.error to capture frontend errors
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     consoleErrorSpy.mockRestore();
   });
 

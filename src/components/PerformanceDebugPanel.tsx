@@ -18,7 +18,7 @@ export function PerformanceDebugPanel(): React.ReactElement {
 
   useEffect(() => {
     // Only load performance monitoring in development
-    if (process.env.NODE_ENV !== 'development') {
+    if (!import.meta.env.DEV) {
       return;
     }
 
@@ -50,7 +50,7 @@ export function PerformanceDebugPanel(): React.ReactElement {
   }, [performanceMonitor]);
 
   // Don't render in production
-  if (process.env.NODE_ENV !== 'development') {
+  if (!import.meta.env.DEV) {
     return <div style={{ display: 'none' }} />;
   }
 

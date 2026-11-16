@@ -1,3 +1,4 @@
+import type { MockInstance } from 'vitest';
 import React from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { AppProvider } from '../../src/context/AppContext';
@@ -18,7 +19,7 @@ const customRender = (
 
 // Mock helpers for common patterns
 export const createMockFetch = (mockResponse: any, status: number = 200) => {
-  return jest.fn().mockImplementation(() =>
+  return vi.fn().mockImplementation(() =>
     Promise.resolve({
       ok: status >= 200 && status < 300,
       status,
@@ -29,7 +30,7 @@ export const createMockFetch = (mockResponse: any, status: number = 200) => {
       redirected: false,
       type: 'basic' as ResponseType,
       url: 'http://localhost',
-      clone: jest.fn(),
+      clone: vi.fn(),
       body: null,
       bodyUsed: false,
       arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
@@ -43,17 +44,17 @@ export const createMockLocalStorage = () => {
   const store: Record<string, string> = {};
   
   return {
-    getItem: jest.fn((key: string) => store[key] || null),
-    setItem: jest.fn((key: string, value: string) => {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
       store[key] = value;
     }),
-    removeItem: jest.fn((key: string) => {
+    removeItem: vi.fn((key: string) => {
       delete store[key];
     }),
-    clear: jest.fn(() => {
+    clear: vi.fn(() => {
       Object.keys(store).forEach(key => delete store[key]);
     }),
-    key: jest.fn((index: number) => Object.keys(store)[index] || null),
+    key: vi.fn((index: number) => Object.keys(store)[index] || null),
     length: Object.keys(store).length
   };
 };
@@ -65,12 +66,12 @@ export const waitForAsync = (ms: number = 0) =>
 // Utility to create mock timers with cleanup
 export const setupMockTimers = () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
   });
 };
 
@@ -100,14 +101,14 @@ export const TestErrorBoundary: React.FC<{
 
 // Console spy utilities
 export const setupConsoleSpy = () => {
-  let consoleErrorSpy: jest.SpyInstance;
-  let consoleWarnSpy: jest.SpyInstance;
-  let consoleLogSpy: jest.SpyInstance;
+  let consoleErrorSpy: MockInstance;
+  let consoleWarnSpy: MockInstance;
+  let consoleLogSpy: MockInstance;
 
   beforeEach(() => {
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {

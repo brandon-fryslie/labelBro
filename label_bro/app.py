@@ -19,9 +19,9 @@ app = flask.Flask(__name__)
 
 LABEL_WIDTH = 696
 
-# The `pnpm build` output (not committed) under the static folder; base.html loads it and index() requires it.
-# It must match the build's outfile in build-with-error-reporting.js.
-FRONTEND_BUNDLE = 'js/bundle.js'
+# The page `pnpm build` writes (not committed) under the static folder, with its assets beside it; index() serves it.
+# It must match build.outDir and the build base in vite.config.ts.
+FRONTEND_INDEX = 'dist/index.html'
 
 # Background autodiscovery on server startup
 def run_startup_autodiscovery():
@@ -37,15 +37,6 @@ def run_startup_autodiscovery():
     for printer_id, printer_info in discovered.items():
         app.logger.info("  - %s: %s (%s)", printer_id, printer_info.model_number, printer_info.backend)
 
-
-
-@app.context_processor
-def inject_common_data():
-    return {
-        'last_updated': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'app_name': 'Label Bro 😎',  # Example of additional common data
-        'frontend_bundle': FRONTEND_BUNDLE,
-    }
 
 
 @app.before_request
@@ -83,14 +74,10 @@ def handle_exception(e):
 
 @app.route('/')
 def index():
-    bundle = os.path.join(app.static_folder, FRONTEND_BUNDLE)
-    if not os.path.isfile(bundle):
-        # [LAW:no-silent-failure] without the bundle the page renders blank; the browser and the server log get the fix instead.
-        raise RuntimeError(f"Frontend bundle static/{FRONTEND_BUNDLE} not built; run `pnpm install && pnpm build`")
-    return flask.render_template(
-        'index.html',
-        custom_message="Yo. I'm your label Bro. Fist bump Bro."
-    )
+    if not os.path.isfile(os.path.join(app.static_folder, FRONTEND_INDEX)):
+        # [LAW:no-silent-failure] without the build there is no page; the browser and the server log get the fix instead.
+        raise RuntimeError(f"Frontend static/{FRONTEND_INDEX} not built; run `pnpm install && pnpm build`")
+    return flask.send_from_directory(app.static_folder, FRONTEND_INDEX)
 
 
 @app.route('/printers', methods=['GET'])

@@ -1,3 +1,4 @@
+import type { MockedFunction } from 'vitest';
 // API client tests with Typia validation integration
 import { LabelBroAPI } from '../../src/api';
 import { ValidationError, ValidationReporter } from '../../src/validation';
@@ -15,11 +16,11 @@ import {
 } from '../fixtures/api-responses';
 
 // Mock fetch globally
-const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+const mockFetch = global.fetch as MockedFunction<typeof fetch>;
 
 describe('LabelBroAPI with Typia Validation', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     ValidationReporter.clearValidationHistory();
     
     // Mock DOM elements
@@ -48,7 +49,7 @@ describe('LabelBroAPI with Typia Validation', () => {
       const result = await LabelBroAPI.fetchLabelPreviews(labelData);
       
       expect(result).toEqual(validLabelPreviewData);
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:5100/previewLabels', expect.objectContaining({
+      expect(mockFetch).toHaveBeenCalledWith('/previewLabels', expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: expect.stringContaining('Test Label')
@@ -56,8 +57,8 @@ describe('LabelBroAPI with Typia Validation', () => {
     });
 
     it('should handle validation errors and report to AI', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation();
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation();
       
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -129,8 +130,8 @@ describe('LabelBroAPI with Typia Validation', () => {
     });
 
     it('should handle validation errors for invalid printer response', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation();
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation();
       
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -196,7 +197,7 @@ describe('LabelBroAPI with Typia Validation', () => {
       const result = await LabelBroAPI.printLabels(validPrintRequest);
       
       expect(result).toEqual({ success: true });
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:5100/printLabels', expect.objectContaining({
+      expect(mockFetch).toHaveBeenCalledWith('/printLabels', expect.objectContaining({
         method: 'POST',
         body: JSON.stringify(validPrintRequest)
       }));
@@ -232,8 +233,8 @@ describe('LabelBroAPI with Typia Validation', () => {
     });
 
     it('should handle validation errors for invalid connection result', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation();
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation();
       
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -256,8 +257,8 @@ describe('LabelBroAPI with Typia Validation', () => {
   describe('AI Feedback Integration', () => {
     it('should accumulate validation errors for AI analysis', async () => {
       // Spy on the actual mocked localStorage, not Storage.prototype
-      const localStorageSetSpy = jest.spyOn(global.localStorage, 'setItem');
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const localStorageSetSpy = vi.spyOn(global.localStorage, 'setItem');
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation();
 
       // Use discoverPrinters since it logs to localStorage even with validation errors
       mockFetch.mockResolvedValue({
@@ -278,7 +279,7 @@ describe('LabelBroAPI with Typia Validation', () => {
     });
 
     it('should provide comprehensive error context for AI systems', async () => {
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation();
       
       // Mock response that will trigger validation error
       mockFetch.mockResolvedValueOnce({

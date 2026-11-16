@@ -109,7 +109,7 @@ def test_find_available_port_raises_when_range_is_taken():
 
 
 
-def test_index_without_frontend_bundle_names_the_build_command(client, caplog, monkeypatch, tmp_path):
+def test_index_without_frontend_build_names_the_build_command(client, caplog, monkeypatch, tmp_path):
     monkeypatch.setattr(app, 'static_folder', str(tmp_path))
 
     with caplog.at_level(logging.ERROR):
@@ -122,12 +122,13 @@ def test_index_without_frontend_bundle_names_the_build_command(client, caplog, m
     assert 'GET / 500' in caplog.text
 
 
-def test_index_loads_the_frontend_bundle(client, monkeypatch, tmp_path):
-    bundle = tmp_path / app_module.FRONTEND_BUNDLE
-    bundle.parent.mkdir()
-    bundle.write_text('')
+def test_index_serves_the_built_page(client, monkeypatch, tmp_path):
+    page = tmp_path / app_module.FRONTEND_INDEX
+    page.parent.mkdir()
+    page.write_text('<div id="react-root"></div>')
     monkeypatch.setattr(app, 'static_folder', str(tmp_path))
 
-    page = client.get('/').get_data(as_text=True)
+    response = client.get('/')
 
-    assert f'/static/{app_module.FRONTEND_BUNDLE}' in page
+    assert response.status_code == 200
+    assert response.get_data(as_text=True) == '<div id="react-root"></div>'

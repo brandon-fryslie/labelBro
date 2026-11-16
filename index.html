@@ -3,31 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ app_name }}</title>
+    <title>Label Bro 😎</title>
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
-    <!-- Include Prism.js CSS for syntax highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
-    <!-- Include Prism.js CSS for syntax highlighting -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
 </head>
 <body>
 <header>
-    <h1>{{ app_name }}</h1>
+    <h1>Label Bro 😎</h1>
 </header>
 
 <main class="container">
-    {% block content %}
-    <!-- Content will be injected here from child templates -->
-    {% endblock %}
+    <div id="react-root"></div>
 </main>
 
 <footer>
     <p>Fist bump Broski</p>
 </footer>
-<script src="{{ url_for('static', filename=frontend_bundle) }}"></script>
-<!-- Include Prism.js for syntax highlighting -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<!-- Include Prism.js for syntax highlighting -->
+<script type="module" src="/src/main.tsx"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
 </body>

@@ -1,3 +1,4 @@
+import type { MockedFunction } from 'vitest';
 // Integration tests for printer discovery workflow
 // Tests the complete flow: Discovery → Selection → Connection → Status Updates
 
@@ -11,15 +12,15 @@ import {
 } from '../fixtures';
 
 describe('Printer Discovery Workflow Integration', () => {
-  let mockFetch: jest.MockedFunction<typeof fetch>;
+  let mockFetch: MockedFunction<typeof fetch>;
 
   beforeEach(() => {
-    mockFetch = jest.fn(global.fetch) as jest.MockedFunction<typeof fetch>;
+    mockFetch = vi.fn(global.fetch) as MockedFunction<typeof fetch>;
     global.fetch = mockFetch;
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Complete Discovery Flow', () => {
@@ -58,11 +59,11 @@ describe('Printer Discovery Workflow Integration', () => {
       // Verify API call sequence
       expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(mockFetch).toHaveBeenNthCalledWith(1, 
-        'http://localhost:5100/printers/discover',
+        '/printers/discover',
         expect.objectContaining({ method: 'POST' })
       );
       expect(mockFetch).toHaveBeenNthCalledWith(2,
-        'http://localhost:5100/printers',
+        '/printers',
         expect.objectContaining({ method: 'GET' })
       );
     });
@@ -373,7 +374,7 @@ describe('Printer Discovery Workflow Integration', () => {
       
       // Verify error is properly propagated for UI handling
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:5100/printers/discover',
+        '/printers/discover',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({

@@ -1,3 +1,4 @@
+import type { MockedFunction } from 'vitest';
 // End-to-end integration tests for complete application workflows
 // Tests the full user journey: Discovery → Connection → Label Creation → Print
 
@@ -16,15 +17,15 @@ import {
 } from '../fixtures';
 
 describe('End-to-End Application Workflow Integration', () => {
-  let mockFetch: jest.MockedFunction<typeof fetch>;
+  let mockFetch: MockedFunction<typeof fetch>;
 
   beforeEach(() => {
-    mockFetch = jest.fn(global.fetch) as jest.MockedFunction<typeof fetch>;
+    mockFetch = vi.fn(global.fetch) as MockedFunction<typeof fetch>;
     global.fetch = mockFetch;
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Complete User Journey: Auto Discovery → Label → Print', () => {
@@ -63,8 +64,8 @@ describe('End-to-End Application Workflow Integration', () => {
       };
 
       const previewResponse = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
-        small_labels: [validBase64Image.replace('data:image/png;base64,', '')]
+        full_labels: [validBase64Image],
+        small_labels: [validBase64Image]
       };
 
       const printResponse = {
@@ -137,22 +138,22 @@ describe('End-to-End Application Workflow Integration', () => {
       
       // Verify each API call was made correctly
       expect(mockFetch).toHaveBeenNthCalledWith(1,
-        'http://localhost:5100/printers/discover',
+        '/printers/discover',
         expect.objectContaining({ method: 'POST' })
       );
       expect(mockFetch).toHaveBeenNthCalledWith(2,
-        'http://localhost:5100/printers',
+        '/printers',
         expect.objectContaining({ method: 'GET' })
       );
       expect(mockFetch).toHaveBeenNthCalledWith(3,
-        'http://localhost:5100/previewLabels',
+        '/previewLabels',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ text: labelText })
         })
       );
       expect(mockFetch).toHaveBeenNthCalledWith(4,
-        'http://localhost:5100/printLabels',
+        '/printLabels',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify(printRequest)
@@ -176,8 +177,8 @@ describe('End-to-End Application Workflow Integration', () => {
       };
 
       const previewResponse = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
-        small_labels: [validBase64Image.replace('data:image/png;base64,', '')]
+        full_labels: [validBase64Image],
+        small_labels: [validBase64Image]
       };
 
       const printBothResponse = {
@@ -256,8 +257,8 @@ describe('End-to-End Application Workflow Integration', () => {
       };
 
       const previewResponse = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
-        small_labels: [validBase64Image.replace('data:image/png;base64,', '')]
+        full_labels: [validBase64Image],
+        small_labels: [validBase64Image]
       };
 
       const printResponse = {
@@ -339,7 +340,7 @@ describe('End-to-End Application Workflow Integration', () => {
 
       // Preview generation succeeds
       const previewResponse = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
+        full_labels: [validBase64Image],
         small_labels: []
       };
 
@@ -485,8 +486,8 @@ describe('End-to-End Application Workflow Integration', () => {
       };
 
       const previewResponse = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
-        small_labels: [validBase64Image.replace('data:image/png;base64,', '')]
+        full_labels: [validBase64Image],
+        small_labels: [validBase64Image]
       };
 
       const printSuccessResponse = {
@@ -544,13 +545,13 @@ describe('End-to-End Application Workflow Integration', () => {
 
       // Mock responses for concurrent operations
       const preview1Response = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
+        full_labels: [validBase64Image],
         small_labels: []
       };
 
       const preview2Response = {
         full_labels: [],
-        small_labels: [validBase64Image.replace('data:image/png;base64,', '')]
+        small_labels: [validBase64Image]
       };
 
       const print1Response = {
@@ -652,8 +653,8 @@ describe('End-to-End Application Workflow Integration', () => {
       };
 
       const previewResponse = {
-        full_labels: [validBase64Image.replace('data:image/png;base64,', '')],
-        small_labels: [validBase64Image.replace('data:image/png;base64,', '')],
+        full_labels: [validBase64Image],
+        small_labels: [validBase64Image],
         metadata: {
           text: labelText,
           character_count: labelText.length,

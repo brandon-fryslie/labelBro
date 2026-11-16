@@ -1,3 +1,4 @@
+import type { MockedFunction } from 'vitest';
 // Integration tests for manual printer connection workflow
 // Tests the complete flow: IP Input → Connection Test → Result Processing → Status Update
 
@@ -12,15 +13,15 @@ import {
 } from '../fixtures';
 
 describe('Manual Connection Workflow Integration', () => {
-  let mockFetch: jest.MockedFunction<typeof fetch>;
+  let mockFetch: MockedFunction<typeof fetch>;
 
   beforeEach(() => {
-    mockFetch = jest.fn(global.fetch) as jest.MockedFunction<typeof fetch>;
+    mockFetch = vi.fn(global.fetch) as MockedFunction<typeof fetch>;
     global.fetch = mockFetch;
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Successful Manual Connection Flow', () => {
@@ -79,10 +80,10 @@ describe('Manual Connection Workflow Integration', () => {
       // Verify API call sequence
       expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(mockFetch).toHaveBeenNthCalledWith(1,
-        'http://localhost:5100/printers/test',
+        '/printers/test',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ ip: targetIp })
+          body: JSON.stringify({ target: targetIp })
         })
       );
     });

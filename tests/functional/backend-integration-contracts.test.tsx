@@ -1,3 +1,4 @@
+import type { MockedFunction } from 'vitest';
 /**
  * FUNCTIONAL TEST 3: Backend Integration Type Safety
  *
@@ -43,18 +44,18 @@ import { execSync, spawn, ChildProcess } from 'child_process';
 import * as http from 'http';
 
 describe('Functional Test: Backend Integration Type Safety', () => {
-  let mockFetch: jest.MockedFunction<typeof fetch>;
+  let mockFetch: MockedFunction<typeof fetch>;
   let flaskServer: ChildProcess | null = null;
   const FLASK_PORT = 5100;
   const FLASK_URL = `http://localhost:${FLASK_PORT}`;
 
   beforeEach(() => {
-    mockFetch = jest.fn(global.fetch) as jest.MockedFunction<typeof fetch>;
+    mockFetch = vi.fn(global.fetch) as MockedFunction<typeof fetch>;
     global.fetch = mockFetch;
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('CRITICAL: Error Response Format Consistency', () => {
@@ -167,8 +168,7 @@ describe('Functional Test: Backend Integration Type Safety', () => {
 
       const endpoints = [
         { method: 'discoverPrinters', mockCall: () => LabelBroAPI.discoverPrinters() },
-        { method: 'fetchPrinters', mockCall: () => LabelBroAPI.fetchPrinters() },
-        { method: 'testManualConnection', mockCall: () => LabelBroAPI.testManualConnection('invalid') }
+        { method: 'fetchPrinters', mockCall: () => LabelBroAPI.fetchPrinters() }
       ];
 
       for (const endpoint of endpoints) {
@@ -374,25 +374,6 @@ describe('Functional Test: Backend Integration Type Safety', () => {
   });
 
   describe('INTEGRATION: Multiple Error Scenarios', () => {
-    test('should handle validation errors with proper structure', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: () => Promise.resolve({
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid printer ID format'
-          }
-        })
-      } as Response);
-
-      const result = await LabelBroAPI.testManualConnection('invalid@printer');
-
-      if (result !== null && result !== undefined) {
-        expect(result.success).toBe(false);
-      }
-    });
 
     test('should handle authorization errors with proper structure', async () => {
       mockFetch.mockResolvedValueOnce({
@@ -510,21 +491,6 @@ describe('Functional Test: Backend Integration Type Safety', () => {
       }
     });
 
-    test('should have consistent error format across manual connection endpoint', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({
-          success: false,
-          error: { code: 'CONNECTION_FAILED', message: 'Could not connect to printer' }
-        })
-      } as Response);
-
-      const result = await LabelBroAPI.testManualConnection('192.168.1.100');
-
-      expect(result).toBeDefined();
-      expect(result.success).toBe(false);
-    });
 
     test('should have consistent error format across print endpoint', async () => {
       mockFetch.mockResolvedValueOnce({

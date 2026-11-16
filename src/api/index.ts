@@ -7,13 +7,12 @@ import {
 } from '../types';
 import { TypeValidator, ValidationError, ValidationReporter } from '../validation';
 
-// API endpoints - match Flask backend routes
-const API_BASE = 'http://localhost:5100';
-const PREVIEW_ENDPOINT = `${API_BASE}/previewLabels`;
-const PRINTERS_ENDPOINT = `${API_BASE}/printers`;
-const PRINT_ENDPOINT = `${API_BASE}/printLabels`;
-const DISCOVERY_ENDPOINT = `${API_BASE}/printers/discover`;
-const TEST_ENDPOINT = `${API_BASE}/printers/test`;
+// API endpoints - match Flask backend routes. Same-origin: Flask serves the page, and the Vite dev server proxies these.
+const PREVIEW_ENDPOINT = '/previewLabels';
+const PRINTERS_ENDPOINT = '/printers';
+const PRINT_ENDPOINT = '/printLabels';
+const DISCOVERY_ENDPOINT = '/printers/discover';
+const TEST_ENDPOINT = '/printers/test';
 
 export class LabelBroAPI {
   // Fetch label previews from the backend
@@ -26,21 +25,8 @@ export class LabelBroAPI {
       body: JSON.stringify(labelData)
     });
 
-    const data = await response.json();
-
-    // Convert base64 strings to data URLs for image display (with defensive checks)
-    if (data.full_labels && Array.isArray(data.full_labels)) {
-      data.full_labels = data.full_labels.map((base64: string) =>
-        `data:image/png;base64,${base64}`
-      );
-    }
-    if (data.small_labels && Array.isArray(data.small_labels)) {
-      data.small_labels = data.small_labels.map((base64: string) =>
-        `data:image/png;base64,${base64}`
-      );
-    }
-
-    return data;
+    // [LAW:one-source-of-truth] Flask's img_to_base64 already returns each label as a data: URL.
+    return await response.json();
   }
 
   // Fetch current printers with runtime validation
@@ -200,6 +186,11 @@ export class LabelBroAPI {
     });
 
     const rawData = await response.json();
+
+    // [LAW:no-silent-failure] Flask answers a failed test with {error}; that is a failure, not a result.
+    if (!response.ok) {
+      throw new Error(rawData.error ?? `Connection test failed with HTTP ${response.status}`);
+    }
 
     // Runtime validation with Typia - use graceful error handling like other methods
     try {
