@@ -18,27 +18,12 @@ const customRender = (
 ) => render(ui, { wrapper: AllTheProviders, ...options });
 
 // Mock helpers for common patterns
-export const createMockFetch = (mockResponse: any, status: number = 200) => {
-  return vi.fn().mockImplementation(() =>
-    Promise.resolve({
-      ok: status >= 200 && status < 300,
-      status,
-      statusText: status === 200 ? 'OK' : 'Error',
-      json: () => Promise.resolve(mockResponse),
-      text: () => Promise.resolve(JSON.stringify(mockResponse)),
-      headers: new Headers(),
-      redirected: false,
-      type: 'basic' as ResponseType,
-      url: 'http://localhost',
-      clone: vi.fn(),
-      body: null,
-      bodyUsed: false,
-      arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
-      blob: () => Promise.resolve(new Blob()),
-      formData: () => Promise.resolve(new FormData())
-    } as Response)
-  );
-};
+// A real Response, shaped as Flask sends it: JSON body, status, and {error} on failure.
+export const flaskResponse = (body: unknown, status: number = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+
+export const createMockFetch = (mockResponse: any, status: number = 200) =>
+  vi.fn().mockImplementation(() => Promise.resolve(flaskResponse(mockResponse, status)));
 
 export const createMockLocalStorage = () => {
   const store: Record<string, string> = {};

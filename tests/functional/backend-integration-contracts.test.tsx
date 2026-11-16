@@ -39,15 +39,11 @@ import type { MockedFunction } from 'vitest';
  */
 
 import { LabelBroAPI } from '../../src/api';
-import { DiscoveryResponse, ManualConnectionResult, LabelPreviewData } from '../../src/types';
-import { execSync, spawn, ChildProcess } from 'child_process';
-import * as http from 'http';
+import { flaskResponse } from '../utils/test-utils';
+import { DiscoveryResponse } from '../../src/types';
 
 describe('Functional Test: Backend Integration Type Safety', () => {
   let mockFetch: MockedFunction<typeof fetch>;
-  let flaskServer: ChildProcess | null = null;
-  const FLASK_PORT = 5100;
-  const FLASK_URL = `http://localhost:${FLASK_PORT}`;
 
   beforeEach(() => {
     mockFetch = vi.fn(global.fetch) as MockedFunction<typeof fetch>;
@@ -473,56 +469,15 @@ describe('Functional Test: Backend Integration Type Safety', () => {
       expect(result).toBeDefined();
     });
 
-    test('should have consistent error format across preview endpoint', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({
-          error: 'Preview generation failed'
-        })
-      } as Response);
+    test('preview and print reject with Flask\'s {error} message', async () => {
+      mockFetch
+        .mockResolvedValueOnce(flaskResponse({ error: 'Preview generation failed' }, 500))
+        .mockResolvedValueOnce(flaskResponse({ error: 'Printer not ready' }, 500));
 
-      const result = await LabelBroAPI.fetchLabelPreviews({ text: 'Test' });
-
-      // Preview endpoint returns different structure
-      // Should have error property
-      if ('error' in result) {
-        expect(result.error).toBeDefined();
-      }
-    });
-
-
-    test('should have consistent error format across print endpoint', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({
-          success: false,
-          error: { code: 'PRINT_FAILED', message: 'Printer not ready' }
-        })
-      } as Response);
-
-      const printRequest = {
-        data: {
-          text: 'Test',
-          shouldPrintFullLabel: true,
-          shouldPrintSmallLabel: false,
-          printer_id: 'test_printer'
-        }
-      };
-
-      try {
-        const result = await LabelBroAPI.printLabels(printRequest);
-
-        if (result && typeof result === 'object') {
-          if ('success' in result) {
-            expect(result.success).toBe(false);
-          }
-        }
-      } catch (error) {
-        // Print might throw on error - that's OK for now
-        expect(error).toBeDefined();
-      }
+      await expect(LabelBroAPI.fetchLabelPreviews({ text: 'Test' })).rejects.toThrow('Preview generation failed');
+      await expect(LabelBroAPI.printLabels({
+        data: { text: 'Test', shouldPrintFullLabel: true, shouldPrintSmallLabel: false, printer_id: 'test_printer' }
+      })).rejects.toThrow('Printer not ready');
     });
   });
 

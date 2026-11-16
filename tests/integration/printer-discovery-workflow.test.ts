@@ -1,9 +1,8 @@
-import type { MockedFunction } from 'vitest';
+import { assert, type MockedFunction } from 'vitest';
 // Integration tests for printer discovery workflow
 // Tests the complete flow: Discovery → Selection → Connection → Status Updates
 
 import { LabelBroAPI } from '../../src/api';
-import { TypeValidator } from '../../src/validation';
 import { 
   validDiscoveryResponses, 
   validPrintersResponses,
@@ -45,6 +44,7 @@ describe('Printer Discovery Workflow Integration', () => {
       
       // Validate discovery response structure
       expect(discoveryResult).toBeDefined();
+      assert(discoveryResult, 'expected a discovery result');
       expect(discoveryResult.success).toBe(true);
       expect(discoveryResult.data.printers).toBeDefined();
       expect(discoveryResult.data.discovery_methods).toBeDefined();
@@ -59,11 +59,11 @@ describe('Printer Discovery Workflow Integration', () => {
       // Verify API call sequence
       expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(mockFetch).toHaveBeenNthCalledWith(1, 
-        '/printers/discover',
+        '/api/printers/discover',
         expect.objectContaining({ method: 'POST' })
       );
       expect(mockFetch).toHaveBeenNthCalledWith(2,
-        '/printers',
+        '/api/printers',
         expect.objectContaining({ method: 'GET' })
       );
     });
@@ -78,6 +78,7 @@ describe('Printer Discovery Workflow Integration', () => {
       } as Response);
 
       const result = await LabelBroAPI.discoverPrinters();
+      assert(result, 'expected a discovery result');
       
       expect(result.success).toBe(true);
       expect(Object.keys(result.data.printers)).toHaveLength(0);
@@ -105,11 +106,12 @@ describe('Printer Discovery Workflow Integration', () => {
       } as Response);
 
       const result = await LabelBroAPI.discoverPrinters();
+      assert(result, 'expected a discovery result');
       
       expect(result.success).toBe(true);
       expect(result.error).toContain("Network scan failed");
-      expect(result.data.discovery_methods.mdns).toBe(true);
-      expect(result.data.discovery_methods.network_scan).toBe(false);
+      expect(result.data.discovery_methods?.mdns).toBe(true);
+      expect(result.data.discovery_methods?.network_scan).toBe(false);
       expect(Object.keys(result.data.printers).length).toBeGreaterThan(0);
     });
 
@@ -123,13 +125,14 @@ describe('Printer Discovery Workflow Integration', () => {
       } as Response);
 
       const result = await LabelBroAPI.discoverPrinters();
+      assert(result, 'expected a discovery result');
       
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
       expect(Object.keys(result.data.printers)).toHaveLength(0);
-      expect(result.data.discovery_methods.mdns).toBe(false);
-      expect(result.data.discovery_methods.network_scan).toBe(false);
-      expect(result.data.discovery_methods.usb).toBe(false);
+      expect(result.data.discovery_methods?.mdns).toBe(false);
+      expect(result.data.discovery_methods?.network_scan).toBe(false);
+      expect(result.data.discovery_methods?.usb).toBe(false);
     });
   });
 
@@ -163,13 +166,13 @@ describe('Printer Discovery Workflow Integration', () => {
 
       // First status check
       const initialPrinters = await LabelBroAPI.fetchPrinters();
-      expect(initialPrinters!["printer_001"].status).toBe("ready");
-      expect(initialPrinters!["printer_001"].printer_ready).toBe(true);
+      expect(initialPrinters?.["printer_001"]?.status).toBe("ready");
+      expect(initialPrinters?.["printer_001"]?.printer_ready).toBe(true);
 
       // Second status check (simulating status update)
       const updatedPrinters = await LabelBroAPI.fetchPrinters();
-      expect(updatedPrinters!["printer_001"].status).toBe("busy");
-      expect(updatedPrinters!["printer_001"].printer_ready).toBe(false);
+      expect(updatedPrinters?.["printer_001"]?.status).toBe("busy");
+      expect(updatedPrinters?.["printer_001"]?.printer_ready).toBe(false);
     });
 
     test('should handle printer disconnection during monitoring', async () => {
@@ -200,11 +203,11 @@ describe('Printer Discovery Workflow Integration', () => {
         } as Response);
 
       const initialPrinters = await LabelBroAPI.fetchPrinters();
-      expect(initialPrinters!["printer_001"].is_connected).toBe(true);
+      expect(initialPrinters?.["printer_001"]?.is_connected).toBe(true);
 
       const updatedPrinters = await LabelBroAPI.fetchPrinters();
-      expect(updatedPrinters!["printer_001"].is_connected).toBe(false);
-      expect(updatedPrinters!["printer_001"].status).toBe("offline");
+      expect(updatedPrinters?.["printer_001"]?.is_connected).toBe(false);
+      expect(updatedPrinters?.["printer_001"]?.status).toBe("offline");
     });
   });
 
@@ -346,6 +349,7 @@ describe('Printer Discovery Workflow Integration', () => {
 
       // Discovery phase
       const discoveryResult = await LabelBroAPI.discoverPrinters();
+      assert(discoveryResult, 'expected a discovery result');
       expect(discoveryResult.success).toBe(true);
       expect(Object.keys(discoveryResult.data.printers)).toHaveLength(3);
 
@@ -355,9 +359,9 @@ describe('Printer Discovery Workflow Integration', () => {
       expect(Object.keys(statusResult!)).toHaveLength(3);
       
       // Verify different printer statuses
-      expect(statusResult!["printer_001"].status).toBe("ready");
-      expect(statusResult!["printer_002"].status).toBe("busy");
-      expect(statusResult!["printer_003"].status).toBe("offline");
+      expect(statusResult?.["printer_001"]?.status).toBe("ready");
+      expect(statusResult?.["printer_002"]?.status).toBe("busy");
+      expect(statusResult?.["printer_003"]?.status).toBe("offline");
     });
 
     test('should handle discovery workflow with authentication errors', async () => {
@@ -374,7 +378,7 @@ describe('Printer Discovery Workflow Integration', () => {
       
       // Verify error is properly propagated for UI handling
       expect(mockFetch).toHaveBeenCalledWith(
-        '/printers/discover',
+        '/api/printers/discover',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({

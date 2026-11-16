@@ -2,12 +2,14 @@
 // Testing Library unmounts after each test on its own, because `globals: true` exposes afterEach.
 import '@testing-library/jest-dom/vitest';
 
+// Each double gets its behavior at construction, so vi.resetAllMocks() in beforeEach restores it after any
+// per-test override.
 const storageMock = () => ({
-  getItem: vi.fn(),
+  getItem: vi.fn(() => null),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn(),
-  key: vi.fn(),
+  key: vi.fn(() => null),
   length: 0
 });
 
@@ -25,9 +27,8 @@ global.console = {
 
 global.fetch = vi.fn();
 
-const performanceNowMock = vi.fn(() => Date.now());
 global.performance = {
-  now: performanceNowMock,
+  now: vi.fn(() => Date.now()),
   mark: vi.fn(),
   measure: vi.fn(),
   getEntriesByName: vi.fn(() => []),
@@ -36,13 +37,17 @@ global.performance = {
   clearMeasures: vi.fn(),
 } as any;
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
+global.ResizeObserver = vi.fn(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
 
-global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+global.IntersectionObserver = vi.fn(() => ({
+  root: null,
+  rootMargin: '',
+  thresholds: [],
+  takeRecords: vi.fn(() => []),
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
@@ -50,7 +55,7 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn((query: string) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -69,13 +74,9 @@ global.requestAnimationFrame = vi.fn(callback => {
 global.cancelAnimationFrame = vi.fn();
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  for (const storage of [localStorageMock, sessionStorageMock]) {
-    storage.getItem.mockReturnValue(null);
-    storage.key.mockReturnValue(null);
-    storage.length = 0;
-  }
-  performanceNowMock.mockReturnValue(Date.now());
+  vi.resetAllMocks();
+  localStorageMock.length = 0;
+  sessionStorageMock.length = 0;
 });
 
 afterEach(() => {

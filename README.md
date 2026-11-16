@@ -81,7 +81,7 @@ pnpm typecheck
 # Terminal 1: Start Flask backend
 uv run python -m label_bro.app
 
-# Terminal 2: Vite dev server with hot reload; it proxies the API routes to Flask on port 5099
+# Terminal 2: Vite dev server with hot reload; it proxies /api to Flask on port 5099
 pnpm dev
 ```
 
@@ -111,14 +111,15 @@ directly.
 
 ### API
 
-The Flask backend provides these endpoints:
-- `GET /` - Main web interface
-- `GET /printers` - List discovered printers
-- `POST /printers/discover` - Run printer discovery
-- `POST /printers/test` - Test a manual connection to an IP or subnet
-- `POST /previewLabels` - Generate label previews
-- `POST /printLabels` - Print labels to the selected printer
-- `POST /log-frontend-error` - Record a frontend error in the server log
+The Flask backend serves the web interface at `GET /` and its JSON API under `/api`:
+- `GET /api/printers` - List discovered printers
+- `POST /api/printers/discover` - Run printer discovery
+- `POST /api/printers/test` - Test a manual connection to an IP or subnet
+- `POST /api/previewLabels` - Generate label previews
+- `POST /api/printLabels` - Print labels to the selected printer
+- `POST /api/log-frontend-error` - Record a frontend error in the server log
+
+A failed request answers with a non-2xx status and `{"error": "<message>"}`.
 
 ## Troubleshooting
 

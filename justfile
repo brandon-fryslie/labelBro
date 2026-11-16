@@ -6,7 +6,7 @@
 default:
     @just --list
 
-# Development server with TypeScript watching
+# Flask plus the Vite dev server (hot reload, proxies /api to Flask); browse to http://localhost:5173
 dev:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -27,7 +27,7 @@ dev:
         echo -e "${GREEN}✅ TypeScript dependencies installed${NC}"
     fi
     
-    echo -e "${BLUE}📁 TypeScript watcher and Python server will run in parallel${NC}"
+    echo -e "${BLUE}📁 Vite dev server and Python server will run in parallel; browse to http://localhost:5173${NC}"
     echo -e "${YELLOW}💡 Press Ctrl+C to stop both services${NC}"
     echo ""
     
@@ -44,16 +44,13 @@ dev:
     # Set trap to cleanup on script exit
     trap cleanup EXIT INT TERM
     
-    # Start TypeScript dev (type checking + compilation) in background
+    # Start the Vite dev server in background
     (
-        echo -e "${BLUE}[TypeScript]${NC} Starting TypeScript development (type checking + compilation)..."
+        echo -e "${BLUE}[Vite]${NC} Starting the Vite dev server..."
         npm run dev 2>&1 | while IFS= read -r line; do
-            echo -e "${BLUE}[TypeScript]${NC} $line"
+            echo -e "${BLUE}[Vite]${NC} $line"
         done
     ) &
-    
-    # Give TypeScript watcher a moment to start
-    sleep 1
     
     # Start Python server in background
     (
@@ -71,9 +68,9 @@ server:
     @echo "🐍 Starting Python server..."
     uv run python3 -m label_bro.app
 
-# Run TypeScript development (type checking + compilation) only  
+# Run the Vite dev server only (needs `just server` for /api)
 watch:
-    @echo "📝 Starting TypeScript development (type checking + compilation)..."
+    @echo "📝 Starting the Vite dev server on http://localhost:5173..."
     npm run dev
 
 # Type check TypeScript without watching

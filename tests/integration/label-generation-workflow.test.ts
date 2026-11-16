@@ -3,11 +3,9 @@ import type { MockedFunction } from 'vitest';
 // Tests the complete flow: Text Input → Preview Generation → Print → Validation
 
 import { LabelBroAPI } from '../../src/api';
-import { TypeValidator } from '../../src/validation';
+import type { PrintRequest } from '../../src/types';
+import { flaskResponse } from '../utils/test-utils';
 import { 
-  validLabelPreviews,
-  validPrintRequests,
-  createLabelPreviewData,
   createPrintRequest,
   validBase64Image,
   alternateBase64Image
@@ -30,12 +28,6 @@ describe('Label Generation Workflow Integration', () => {
       const labelText = "Integration Test Label";
       const previewRequest = { text: labelText };
       
-      // Mock preview response
-      const previewResponse = createLabelPreviewData({
-        full_labels: [validBase64Image],
-        small_labels: [validBase64Image]
-      });
-
       // Mock print response
       const printRequest = createPrintRequest({
         text: labelText,
@@ -87,14 +79,14 @@ describe('Label Generation Workflow Integration', () => {
       // Verify API call sequence
       expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(mockFetch).toHaveBeenNthCalledWith(1,
-        '/previewLabels',
+        '/api/previewLabels',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify(previewRequest)
         })
       );
       expect(mockFetch).toHaveBeenNthCalledWith(2,
-        '/printLabels',
+        '/api/printLabels',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify(printRequest)
@@ -102,26 +94,11 @@ describe('Label Generation Workflow Integration', () => {
       );
     });
 
-    test('should handle empty text input gracefully', async () => {
-      const emptyTextRequest = { text: "" };
-      
-      const emptyPreviewResponse = {
-        full_labels: [],
-        small_labels: [],
-        error: "No content to generate preview"
-      };
+    test('rejects empty text with Flask\'s message', async () => {
+      // preview_labels_endpoint raises on empty input; handle_exception answers 500 {error}
+      mockFetch.mockResolvedValueOnce(flaskResponse({ error: 'Input is empty!' }, 500));
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve(emptyPreviewResponse)
-      } as Response);
-
-      const result = await LabelBroAPI.fetchLabelPreviews(emptyTextRequest);
-      
-      expect(result.full_labels).toHaveLength(0);
-      expect(result.small_labels).toHaveLength(0);
-      expect(result.error).toContain("No content");
+      await expect(LabelBroAPI.fetchLabelPreviews({ text: "" })).rejects.toThrow('Input is empty!');
     });
 
     test('should handle very long text input', async () => {
@@ -130,8 +107,7 @@ describe('Label Generation Workflow Integration', () => {
       
       const longTextPreviewResponse = {
         full_labels: [validBase64Image],
-        small_labels: [validBase64Image],
-        error: "Text may be truncated on small labels"
+        small_labels: [validBase64Image]
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -144,7 +120,6 @@ describe('Label Generation Workflow Integration', () => {
       
       expect(result.full_labels).toHaveLength(1);
       expect(result.small_labels).toHaveLength(1);
-      expect(result.error).toContain("may be truncated");
     });
   });
 
@@ -252,8 +227,7 @@ describe('Label Generation Workflow Integration', () => {
       
       const unicodeTextResponse = {
         full_labels: [validBase64Image],
-        small_labels: [validBase64Image],
-        error: "Some characters may not display correctly on all printer models"
+        small_labels: [validBase64Image]
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -265,7 +239,6 @@ describe('Label Generation Workflow Integration', () => {
       const result = await LabelBroAPI.fetchLabelPreviews(unicodeTextRequest);
       
       expect(result.full_labels).toHaveLength(1);
-      expect(result.error).toContain("may not display correctly");
     });
   });
 
@@ -273,16 +246,9 @@ describe('Label Generation Workflow Integration', () => {
     test('should handle preview generation server errors', async () => {
       const textRequest = { text: "Server Error Test" };
 
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-        json: () => Promise.resolve({ error: 'Image generation service unavailable' })
-      } as Response);
+      mockFetch.mockResolvedValueOnce(flaskResponse({ error: 'Image generation service unavailable' }, 500));
 
-      // API returns error object, doesn't throw
-      const result = await LabelBroAPI.fetchLabelPreviews(textRequest);
-      expect(result.error).toBe('Image generation service unavailable');
+      await expect(LabelBroAPI.fetchLabelPreviews(textRequest)).rejects.toThrow('Image generation service unavailable');
     });
 
     test('should handle print request server errors', async () => {
@@ -292,16 +258,9 @@ describe('Label Generation Workflow Integration', () => {
         shouldPrintSmallLabel: false
       });
 
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        statusText: 'Service Unavailable',
-        json: () => Promise.resolve({ error: 'Printer service temporarily unavailable' })
-      } as Response);
+      mockFetch.mockResolvedValueOnce(flaskResponse({ error: 'Printer service temporarily unavailable' }, 503));
 
-      // API returns error object, doesn't throw
-      const result = await LabelBroAPI.printLabels(printRequest);
-      expect(result.error).toBe('Printer service temporarily unavailable');
+      await expect(LabelBroAPI.printLabels(printRequest)).rejects.toThrow('Printer service temporarily unavailable');
     });
 
 
@@ -322,7 +281,7 @@ describe('Label Generation Workflow Integration', () => {
         { text: "Label 3" }
       ];
 
-      const responses = requests.map((req, index) => ({
+      const responses = requests.map((_, index) => ({
         full_labels: [`data:image/png;base64,base64-data-${index}`],
         small_labels: [`data:image/png;base64,base64-data-small-${index}`]
       }));
@@ -410,7 +369,7 @@ describe('Label Generation Workflow Integration', () => {
     });
 
     test('should validate print request data before sending', async () => {
-      const invalidPrintRequest = {
+      const invalidPrintRequest: unknown = {
         data: {
           text: 123, // Should be string
           shouldPrintFullLabel: "yes", // Should be boolean
@@ -421,7 +380,7 @@ describe('Label Generation Workflow Integration', () => {
       // The API should validate the request before sending
       // This test verifies the validation system integration
       try {
-        await LabelBroAPI.printLabels(invalidPrintRequest as any);
+        await LabelBroAPI.printLabels(invalidPrintRequest as PrintRequest);
       } catch (error) {
         // May throw validation error or handle gracefully
         // depending on implementation strategy

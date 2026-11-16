@@ -99,6 +99,14 @@ export function usePrinters() {
       return;
     }
 
+    // [LAW:one-source-of-truth] a {success: false} result and a rejected request are the same failure to the user.
+    const reportFailure = (errorMsg: string) => {
+      setConnectionStatus(errorMsg);
+      setConnectionResults(errorMsg);
+      setError(errorMsg);
+      addLog(`Connection failed: ${errorMsg}`);
+    };
+
     try {
       setIsDiscovering(true);
       setError(null);
@@ -117,18 +125,11 @@ export function usePrinters() {
         // Refresh printers list
         await fetchPrinters();
       } else {
-        const errorMsg = result.error || 'Connection failed';
-        setConnectionStatus(errorMsg);
-        setConnectionResults(errorMsg);
-        setError(errorMsg);
-        addLog(`Connection failed: ${errorMsg}`);
+        reportFailure(result.error || 'Connection failed');
       }
     } catch (error) {
       console.error('Manual connection error:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Connection failed';
-      setConnectionStatus(errorMsg);
-      setError(errorMsg);
-      addLog(`Connection error: ${errorMsg}`);
+      reportFailure(error instanceof Error ? error.message : 'Connection failed');
     } finally {
       setIsDiscovering(false);
     }

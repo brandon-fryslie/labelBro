@@ -1,11 +1,9 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { API_PREFIX } from './src/api/endpoints';
 
 // The first port find_available_port tries in label_bro/app.py.
 const FLASK_ORIGIN = 'http://127.0.0.1:5099';
-
-// Every route label_bro/app.py serves besides `/` (a prefix also covers its sub-paths, e.g. /printers/discover).
-const FLASK_ROUTES = ['/printers', '/printLabels', '/previewLabels', '/log-frontend-error'];
 
 export default defineConfig(({ command }) => ({
   plugins: [react()],
@@ -17,7 +15,7 @@ export default defineConfig(({ command }) => ({
     sourcemap: true,
   },
   server: {
-    proxy: Object.fromEntries(FLASK_ROUTES.map((route) => [route, FLASK_ORIGIN])),
+    proxy: { [API_PREFIX]: FLASK_ORIGIN },
   },
   test: {
     environment: 'jsdom',

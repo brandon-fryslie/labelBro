@@ -67,7 +67,7 @@ describe('Typia Runtime Type Validation', () => {
       edgeCases.forEach((testCase, index) => {
         expect(() => {
           TypeValidator.validatePrinterData(testCase);
-        }).toThrow(ValidationError, `Edge case ${index} should fail validation`);
+        }, `Edge case ${index} should fail validation`).toThrow(ValidationError);
       });
     });
   });
@@ -107,18 +107,6 @@ describe('Typia Runtime Type Validation', () => {
       }).toThrow(ValidationError);
     });
 
-    it('should validate LabelPreviewData with error field', () => {
-      const dataWithError = {
-        full_labels: [],
-        small_labels: [],
-        error: "Preview generation failed"
-      };
-
-      expect(() => {
-        const result = TypeValidator.validateLabelPreviewData(dataWithError);
-        expect(result).toEqual(dataWithError);
-      }).not.toThrow();
-    });
   });
 
   describe('DiscoveryResponse Validation', () => {
@@ -169,14 +157,14 @@ describe('Typia Runtime Type Validation', () => {
   describe('Generic Validation', () => {
     it('should work with generic validate method', () => {
       expect(() => {
-        const result = TypeValidator.validate<typeof validPrinterData>(validPrinterData, 'TestPrinterData');
+        const result = TypeValidator.validate<typeof validPrinterData>(validPrinterData);
         expect(result).toEqual(validPrinterData);
       }).not.toThrow();
     });
 
     it('should work with assert method', () => {
       expect(() => {
-        const result = TypeValidator.assert<typeof validPrinterData>(validPrinterData, 'TestPrinterData');
+        const result = TypeValidator.assert<typeof validPrinterData>(validPrinterData);
         expect(result).toEqual(validPrinterData);
       }).not.toThrow();
     });
@@ -184,7 +172,7 @@ describe('Typia Runtime Type Validation', () => {
 
   describe('ValidationReporter', () => {
     it('should log validation errors with AI feedback', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       
       try {
         TypeValidator.validatePrinterData(invalidPrinterData);
@@ -201,7 +189,7 @@ describe('Typia Runtime Type Validation', () => {
     });
 
     it('should report to AI systems', () => {
-      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation();
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const localStorageSetSpy = vi.spyOn(localStorage, 'setItem');
       
       try {
@@ -268,9 +256,9 @@ describe('Typia Runtime Type Validation', () => {
         { data: { printers: "invalid" }, field: 'printers' }
       ];
 
-      testCases.forEach(({ data, field }) => {
+      testCases.forEach(({ data }) => {
         try {
-          TypeValidator.validate(data, 'TestType');
+          TypeValidator.validate(data);
         } catch (error) {
           if (error instanceof ValidationError) {
             const feedback = error.toAIFeedback();
@@ -284,7 +272,7 @@ describe('Typia Runtime Type Validation', () => {
 
   describe('Performance and Edge Cases', () => {
     it('should handle large objects efficiently', () => {
-      const largeObject = {
+      const largeObject: { printers: Record<string, typeof validPrinterData> } = {
         printers: {}
       };
       

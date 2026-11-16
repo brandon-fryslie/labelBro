@@ -71,28 +71,22 @@ export function useLabels() {
         }
       };
 
+      // A failed print rejects (flaskJson), so reaching here means it printed.
       const result = await LabelBroAPI.printLabels(printRequest);
-      
-      // Handle print result
-      if (result.error) {
-        setError(result.error);
-        addLog(`Print failed: ${result.error}`);
-      } else {
-        addLog('Label printed successfully');
-        
-        // Add to history if print was successful
-        if ((window as any).addToLabelHistory) {
-          (window as any).addToLabelHistory(state.labelText, {
-            printFullLabel: state.printFullLabel,
-            printSmallLabel: state.printSmallLabel
-          });
-        }
-        
-        // Clear textarea if clearAfterPrint is enabled
-        if (state.clearAfterPrint) {
-          setLabelText('');
-          addLog('Label text cleared after print');
-        }
+      addLog('Label printed successfully');
+
+      // Add to history if print was successful
+      if ((window as any).addToLabelHistory) {
+        (window as any).addToLabelHistory(state.labelText, {
+          printFullLabel: state.printFullLabel,
+          printSmallLabel: state.printSmallLabel
+        });
+      }
+
+      // Clear textarea if clearAfterPrint is enabled
+      if (state.clearAfterPrint) {
+        setLabelText('');
+        addLog('Label text cleared after print');
       }
       
       return result;

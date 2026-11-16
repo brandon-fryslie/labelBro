@@ -24,7 +24,6 @@ export interface PrintersResponse {
 export interface LabelPreviewData {
   full_labels: string[];
   small_labels: string[];
-  error?: string;
 }
 
 export interface PrintRequest {

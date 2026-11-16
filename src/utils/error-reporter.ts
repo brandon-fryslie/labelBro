@@ -1,3 +1,5 @@
+import { LOG_FRONTEND_ERROR_ENDPOINT } from '../api/endpoints';
+
 // TypeScript compilation error reporter for cross-system logging
 export class TypeScriptErrorReporter {
   // Send TypeScript compilation errors to backend
@@ -9,7 +11,7 @@ export class TypeScriptErrorReporter {
     code?: string;
   }): Promise<void> {
     try {
-      await fetch('/log-frontend-error', {
+      await fetch(LOG_FRONTEND_ERROR_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -37,7 +39,7 @@ export class TypeScriptErrorReporter {
   // Send generic JavaScript runtime errors to backend
   static async reportRuntimeError(error: Error, context?: string): Promise<void> {
     try {
-      await fetch('/log-frontend-error', {
+      await fetch(LOG_FRONTEND_ERROR_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

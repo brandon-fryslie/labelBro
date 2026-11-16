@@ -6,13 +6,26 @@ import {
   ManualConnectionResult
 } from '../types';
 import { TypeValidator, ValidationError, ValidationReporter } from '../validation';
+import { PREVIEW_ENDPOINT, PRINTERS_ENDPOINT, PRINT_ENDPOINT, DISCOVERY_ENDPOINT, TEST_ENDPOINT } from './endpoints';
 
-// API endpoints - match Flask backend routes. Same-origin: Flask serves the page, and the Vite dev server proxies these.
-const PREVIEW_ENDPOINT = '/previewLabels';
-const PRINTERS_ENDPOINT = '/printers';
-const PRINT_ENDPOINT = '/printLabels';
-const DISCOVERY_ENDPOINT = '/printers/discover';
-const TEST_ENDPOINT = '/printers/test';
+// [LAW:single-enforcer] Flask answers every failure with a non-2xx status and an {error} body; this is where that
+// becomes a rejection. A body that is not Flask's JSON (e.g. the Vite proxy's 500 when Flask is down) keeps its status.
+async function flaskJson(response: Response): Promise<any> {
+  if (response.ok) {
+    return response.json();
+  }
+  const body = await response.text();
+  throw new Error(flaskErrorMessage(body) ?? `HTTP ${response.status} from ${response.url}${body ? `: ${body}` : ''}`);
+}
+
+function flaskErrorMessage(body: string): string | undefined {
+  try {
+    const { error } = JSON.parse(body);
+    return typeof error === 'string' ? error : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export class LabelBroAPI {
   // Fetch label previews from the backend
@@ -26,7 +39,7 @@ export class LabelBroAPI {
     });
 
     // [LAW:one-source-of-truth] Flask's img_to_base64 already returns each label as a data: URL.
-    return await response.json();
+    return flaskJson(response);
   }
 
   // Fetch current printers with runtime validation
@@ -165,14 +178,9 @@ export class LabelBroAPI {
       body: JSON.stringify(request)
     });
 
-    // Check if response exists before calling .json()
-    if (!response) {
-      throw new Error('No response received from server');
-    }
-
     // Note: Print response structure is not strictly typed in original code
     // We could add validation here if the response structure is defined
-    return await response.json();
+    return flaskJson(response);
   }
 
   // Test manual connection with runtime validation and graceful degradation
@@ -185,12 +193,8 @@ export class LabelBroAPI {
       body: JSON.stringify({ target })
     });
 
-    const rawData = await response.json();
-
     // [LAW:no-silent-failure] Flask answers a failed test with {error}; that is a failure, not a result.
-    if (!response.ok) {
-      throw new Error(rawData.error ?? `Connection test failed with HTTP ${response.status}`);
-    }
+    const rawData = await flaskJson(response);
 
     // Runtime validation with Typia - use graceful error handling like other methods
     try {

@@ -20,14 +20,14 @@ def test_server_error_returns_message_without_trace(client, caplog, monkeypatch)
     monkeypatch.setattr(app_module.label_creation, 'create_full_width_label_image', explode)
 
     with caplog.at_level(logging.INFO, logger=app.logger.name):
-        response = client.post('/previewLabels', json={'data': {'text': 'hello'}})
+        response = client.post('/api/previewLabels', json={'data': {'text': 'hello'}})
 
     assert response.status_code == 500
     assert response.get_json() == {'error': 'cairo fell over'}
     assert b'Traceback' not in response.data
 
     # One event for the request, carrying the trace.
-    [event] = [r for r in caplog.records if r.getMessage().startswith('POST /previewLabels ')]
+    [event] = [r for r in caplog.records if r.getMessage().startswith('POST /api/previewLabels ')]
     assert event.levelno == logging.ERROR
     assert ' 500 ' in event.getMessage()
     assert isinstance(event.exc_info[1], RuntimeError)
@@ -35,7 +35,7 @@ def test_server_error_returns_message_without_trace(client, caplog, monkeypatch)
 
 @pytest.mark.parametrize('method, path, status', [
     ('get', '/no-such-route', 404),
-    ('get', '/printers/discover', 405),
+    ('get', '/api/printers/discover', 405),
 ])
 def test_http_errors_keep_their_status_as_json(client, caplog, method, path, status):
     with caplog.at_level(logging.INFO, logger=app.logger.name):
@@ -50,7 +50,7 @@ def test_http_errors_keep_their_status_as_json(client, caplog, method, path, sta
 
 
 def test_method_not_allowed_keeps_allow_header(client):
-    response = client.get('/printers/discover')
+    response = client.get('/api/printers/discover')
 
     assert set(response.headers['Allow'].split(', ')) == {'OPTIONS', 'POST'}
 
@@ -91,7 +91,7 @@ def test_manual_connection_registers_ready_printer(client, caplog, monkeypatch):
     })
 
     with caplog.at_level(logging.INFO, logger=app.logger.name):
-        response = client.post('/printers/test', json={'target': '10.0.0.7'})
+        response = client.post('/api/printers/test', json={'target': '10.0.0.7'})
 
     assert response.status_code == 200
     assert registry['manual_10_0_0_7'].identifier == 'tcp://10.0.0.7:9100'

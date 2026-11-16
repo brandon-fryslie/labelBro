@@ -22,18 +22,11 @@ export function LabelPreview(): React.ReactElement {
 
   const showNoPreviewsMessage = !labelText.trim() || (!printFullLabel && !printSmallLabel);
   const showLoadingMessage = isGeneratingPreviews && labelText.trim();
-  const showErrorMessage = labelPreviews?.error;
 
   return (
     <div className="previews-container">
       <h2>Preview</h2>
       <div className="flex-container">
-        {showErrorMessage && (
-          <div className="preview-error">
-            <p style={{ color: '#f66' }}>Error: {labelPreviews?.error}</p>
-          </div>
-        )}
-        
         {showLoadingMessage && (
           <div className="preview-loading">
             <p>Generating previews...</p>

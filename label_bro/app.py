@@ -23,6 +23,10 @@ LABEL_WIDTH = 696
 # It must match build.outDir and the build base in vite.config.ts.
 FRONTEND_INDEX = 'dist/index.html'
 
+# [LAW:one-source-of-truth] every JSON route lives under one prefix (API_PREFIX in src/api/endpoints.ts),
+# so the Vite dev server proxies the prefix instead of a copy of this route table.
+api = flask.Blueprint('api', __name__, url_prefix='/api')
+
 # Background autodiscovery on server startup
 def run_startup_autodiscovery():
     """Run printer autodiscovery in background on server startup"""
@@ -80,7 +84,7 @@ def index():
     return flask.send_from_directory(app.static_folder, FRONTEND_INDEX)
 
 
-@app.route('/printers', methods=['GET'])
+@api.route('/printers', methods=['GET'])
 def get_printers():
     """Get cached printers from startup autodiscovery without re-running discovery"""
     # Use the global printer registry populated at startup
@@ -102,7 +106,7 @@ def get_printers():
     }), 200
 
 
-@app.route('/printers/discover', methods=['POST'])
+@api.route('/printers/discover', methods=['POST'])
 def discover_printers():
     """Discover all printers including network auto-discovery"""
     printers = printer_utils.discover_all_printers()
@@ -129,7 +133,7 @@ def discover_printers():
     }), 200
 
 
-@app.route('/printers/test', methods=['POST'])
+@api.route('/printers/test', methods=['POST'])
 def test_manual_connection():
     """Test manual connection to IP address or subnet and add successful connections to registry"""
     data = flask.request.json
@@ -168,7 +172,7 @@ def test_manual_connection():
     return flask.jsonify(result), 200
 
 
-@app.route('/printLabels', methods=['POST'])
+@api.route('/printLabels', methods=['POST'])
 def print_labels_endpoint():
     data = flask.request.json.get('data', {})
     text_content = data.get('text', '')
@@ -226,7 +230,7 @@ def print_labels_endpoint():
     return flask.jsonify({'status': f'Label status: {status}'}), 200
 
 
-@app.route('/previewLabels', methods=['POST'])
+@api.route('/previewLabels', methods=['POST'])
 def preview_labels_endpoint():
     data = flask.request.json.get('data', {})
     text_content = data.get('text', '')
@@ -269,7 +273,7 @@ def preview_labels_endpoint():
     }), 200
 
 
-@app.route('/log-frontend-error', methods=['POST'])
+@api.route('/log-frontend-error', methods=['POST'])
 def log_frontend_error():
     """Endpoint for frontend to send TypeScript/validation errors to backend for centralized logging"""
     data = flask.request.get_json()
@@ -324,6 +328,8 @@ def log_frontend_error():
 
 
 # AI generation routes removed - functionality not needed for multiple printer support
+
+app.register_blueprint(api)
 
 def find_available_port(start_port=5099, max_attempts=100):
     """Find an available port starting from start_port; raise if the whole range is taken"""

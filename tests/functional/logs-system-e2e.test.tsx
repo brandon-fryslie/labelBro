@@ -36,8 +36,7 @@ import type { MockInstance, MockedFunction } from 'vitest';
  * - LogsBar shows most recent log summary
  */
 
-import React from 'react';
-import { render, screen, waitFor, within } from '../utils/test-utils';
+import { render, screen, waitFor } from '../utils/test-utils';
 import { App } from '../../src/components/App';
 import { LabelBroAPI } from '../../src/api';
 import type { LogEntry } from '../../src/types';
@@ -51,7 +50,7 @@ describe('Functional Test: Logs System End-to-End', () => {
     global.fetch = mockFetch;
 
     // Spy on console.error to capture frontend errors
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation();
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
