@@ -1,6 +1,8 @@
 import os
 import sys
 import socket
+import logging
+import time
 from datetime import datetime
 from typing import List, Dict
 import threading
@@ -13,18 +15,23 @@ from label_bro.utils import printer_utils
 from label_bro.utils import label_creation
 
 app = flask.Flask(__name__)
+app.logger.setLevel(logging.INFO)
 
 LABEL_WIDTH = 696
 
 # Background autodiscovery on server startup
 def run_startup_autodiscovery():
     """Run printer autodiscovery in background on server startup"""
-    # [LAW:no-silent-failure] a failure propagates to threading.excepthook, which prints the full trace.
-    print("🔍 Starting background printer autodiscovery...")
-    discovered = printer_utils.discover_all_printers()
-    print(f"✅ Startup autodiscovery complete: {len(discovered)} printers found")
+    app.logger.info("Starting background printer autodiscovery")
+    try:
+        discovered = printer_utils.discover_all_printers()
+    except Exception:
+        # [LAW:no-silent-failure] the thread's top level: the trace goes to the server log.
+        app.logger.exception("Startup autodiscovery failed")
+        return
+    app.logger.info("Startup autodiscovery complete: %d printers found", len(discovered))
     for printer_id, printer_info in discovered.items():
-        print(f"  - {printer_id}: {printer_info.model_number} ({printer_info.backend})")
+        app.logger.info("  - %s: %s (%s)", printer_id, printer_info.model_number, printer_info.backend)
 
 
 
@@ -36,11 +43,28 @@ def inject_common_data():
     }
 
 
+@app.before_request
+def start_request_clock():
+    flask.g.request_started = time.perf_counter()
+
+
+@app.after_request
+def log_request(response):
+    # [LAW:nothing-unseen] one event per request, emitted in the layer every request passes through.
+    duration_ms = (time.perf_counter() - flask.g.request_started) * 1000
+    app.logger.info("%s %s %d %.1fms", flask.request.method, flask.request.path, response.status_code, duration_ms)
+    return response
+
+
 @app.errorhandler(Exception)
 def handle_exception(e):
-    # HTTP errors (400, 404, 405, ...) keep their status; the frontend reads every response as JSON.
+    # HTTP errors (400, 404, 405, ...) keep their status and headers (Allow, ...);
+    # only the body becomes JSON, because the frontend reads every response as JSON.
     if isinstance(e, HTTPException):
-        return flask.jsonify({'error': e.description}), e.code
+        response = e.get_response()
+        response.data = flask.json.dumps({'error': e.description})
+        response.content_type = 'application/json'
+        return response
     # [LAW:no-silent-failure] the trace goes to the server log; clients on the LAN get the message only.
     app.logger.exception("Unhandled error serving %s %s", flask.request.method, flask.request.path)
     return flask.jsonify({'error': str(e)}), 500
@@ -137,7 +161,7 @@ def test_manual_connection():
 
                 # Add to discovered printers registry
                 _discovered_printers[printer_id] = printer_info
-                print(f"Added manual printer to registry: {printer_id}")
+                app.logger.info("Added manual printer to registry: %s", printer_id)
 
     return flask.jsonify(result), 200
 
