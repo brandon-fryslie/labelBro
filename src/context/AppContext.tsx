@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
-import type { PrinterData, LabelPreviewData, LogEntry } from '../types';
+import type { PrinterData, LabelPreviewState, LogEntry } from '../types';
 
 // Application state interface
 interface AppState {
@@ -17,7 +17,7 @@ interface AppState {
   printFullLabel: boolean;
   printSmallLabel: boolean;
   clearAfterPrint: boolean;
-  labelPreviews: LabelPreviewData | null;
+  labelPreviews: LabelPreviewState;
   isGeneratingPreviews: boolean;
 
   // UI state
@@ -51,7 +51,7 @@ type AppAction =
   | { type: 'SET_PRINT_FULL_LABEL'; payload: boolean }
   | { type: 'SET_PRINT_SMALL_LABEL'; payload: boolean }
   | { type: 'SET_CLEAR_AFTER_PRINT'; payload: boolean }
-  | { type: 'SET_LABEL_PREVIEWS'; payload: LabelPreviewData | null }
+  | { type: 'SET_LABEL_PREVIEWS'; payload: LabelPreviewState }
   | { type: 'SET_IS_GENERATING_PREVIEWS'; payload: boolean }
   | { type: 'TOGGLE_PRINTER_PANEL' }
   | { type: 'TOGGLE_LOGS_PANEL' }
@@ -78,7 +78,7 @@ const initialState: AppState = {
   printFullLabel: true,
   printSmallLabel: true,
   clearAfterPrint: false,
-  labelPreviews: null,
+  labelPreviews: { kind: 'none' },
   isGeneratingPreviews: false,
 
   isPrinterPanelExpanded: false,
@@ -194,7 +194,7 @@ interface AppContextType {
   setPrintFullLabel: (enabled: boolean) => void;
   setPrintSmallLabel: (enabled: boolean) => void;
   setClearAfterPrint: (enabled: boolean) => void;
-  setLabelPreviews: (previews: LabelPreviewData | null) => void;
+  setLabelPreviews: (previews: LabelPreviewState) => void;
   setIsGeneratingPreviews: (generating: boolean) => void;
   togglePrinterPanel: () => void;
   toggleLogsPanel: () => void;
@@ -260,7 +260,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SET_CLEAR_AFTER_PRINT', payload: enabled });
   }, []);
 
-  const setLabelPreviews = useCallback((previews: LabelPreviewData | null) => {
+  const setLabelPreviews = useCallback((previews: LabelPreviewState) => {
     dispatch({ type: 'SET_LABEL_PREVIEWS', payload: previews });
   }, []);
 

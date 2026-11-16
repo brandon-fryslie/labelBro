@@ -6,9 +6,9 @@ export function LabelPreview(): React.ReactElement {
 
   // Create label pairs from the preview data
   const createLabelPairs = () => {
-    if (!labelPreviews) return [];
+    if (labelPreviews.kind !== 'ready') return [];
 
-    const { full_labels, small_labels } = labelPreviews;
+    const { full_labels, small_labels } = labelPreviews.previews;
     const maxLength = Math.max(full_labels.length, small_labels.length);
     
     return Array.from({ length: maxLength }, (_, index) => ({
@@ -27,6 +27,12 @@ export function LabelPreview(): React.ReactElement {
     <div className="previews-container">
       <h2>Preview</h2>
       <div className="flex-container">
+        {labelPreviews.kind === 'failed' && !showLoadingMessage && (
+          <div className="preview-error">
+            <p style={{ color: '#f66' }}>Preview failed: {labelPreviews.message}</p>
+          </div>
+        )}
+
         {showLoadingMessage && (
           <div className="preview-loading">
             <p>Generating previews...</p>

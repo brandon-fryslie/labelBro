@@ -26,6 +26,12 @@ export interface LabelPreviewData {
   small_labels: string[];
 }
 
+// [LAW:types-are-the-program] the preview pane shows exactly one of these; a failure is a state, not missing data.
+export type LabelPreviewState =
+  | { kind: 'none' }
+  | { kind: 'ready'; previews: LabelPreviewData }
+  | { kind: 'failed'; message: string };
+
 export interface PrintRequest {
   data: {
     text: string;

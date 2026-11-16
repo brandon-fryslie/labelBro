@@ -21,7 +21,7 @@ export function useLabels() {
     const labelText = text ?? state.labelText;
     
     if (!labelText.trim()) {
-      setLabelPreviews(null);
+      setLabelPreviews({ kind: 'none' });
       return;
     }
 
@@ -40,13 +40,12 @@ export function useLabels() {
       };
       
       const previews = await LabelBroAPI.fetchLabelPreviews(labelData);
-      setLabelPreviews(previews);
+      setLabelPreviews({ kind: 'ready', previews });
       addLog('Label previews generated successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate previews';
-      // The last previews belong to other text; showing them beside this error would pass them off as this text's.
-      setLabelPreviews(null);
-      setError(errorMessage);
+      // Replaces the last previews, which belong to other text, so the pane shows this failure instead.
+      setLabelPreviews({ kind: 'failed', message: errorMessage });
       addLog(`Preview generation failed: ${errorMessage}`);
     } finally {
       setIsGeneratingPreviews(false);
