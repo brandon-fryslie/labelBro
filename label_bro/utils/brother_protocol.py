@@ -314,9 +314,9 @@ class BrotherProtocol:
                 ]
             )
 
-            sock.sendto(snmp_packet, (ip, 161))
-            response, _ = sock.recvfrom(1024)
-            sock.close()
+            with sock:
+                sock.sendto(snmp_packet, (ip, 161))
+                response, _ = sock.recvfrom(1024)
         except OSError as e:
             print(f"{ip}: SNMP sysDescr query failed: {e}")
             return "QL-720NW"

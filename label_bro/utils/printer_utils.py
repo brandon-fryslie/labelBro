@@ -304,7 +304,7 @@ def discover_printers_snmp_targeted(ip_ranges: list[str], timeout: float = 0.5) 
         future_to_ip = {executor.submit(check_single_ip, ip): ip for ip in all_ips}
 
         # Collect results as they complete
-        for completed, future in enumerate(concurrent.futures.as_completed(future_to_ip, timeout=timeout * 2 + 10), 1):
+        for completed, future in enumerate(concurrent.futures.as_completed(future_to_ip), 1):
             if completed % 25 == 0:
                 print(f"  Completed {completed}/{len(all_ips)} scans...")
 
@@ -432,6 +432,22 @@ def identify_brother_printer(ip: str) -> str | None:
     return printer_info.model if printer_info else None
 
 
+def _manual_printer_result(ip: str) -> dict | None:
+    """The printers_found entry for a Brother printer at ip, or None when none answers there"""
+    media_info = get_printer_media_info(ip)
+    if not (media_info and media_info["is_brother"]):
+        return None
+    return {
+        "ip": ip,
+        "model": media_info["model"],
+        "media_loaded": media_info["media_loaded"],
+        "media_width": media_info["media_width"],
+        "media_type": media_info["media_type"],
+        "printer_ready": media_info["printer_ready"],
+        "raw_status": media_info["raw_status"],
+    }
+
+
 def test_manual_connection(target: str) -> dict:
     """Test manual connection to either an IP address or subnet with parallel processing"""
     result = {"target": target, "connection_type": None, "success": False, "printers_found": [], "error": None}
@@ -454,24 +470,10 @@ def test_manual_connection(target: str) -> dict:
         # Use parallel port scanning (skip SNMP since it doesn't work)
         discovered = discover_printers_snmp_targeted([target], timeout=0.5)
 
-        def get_printer_details(printer) -> dict | None:
-            ip = printer["ip"]
-            media_info = get_printer_media_info(ip, timeout=3)
-            if not (media_info and media_info["is_brother"]):
-                return None
-            return {
-                "ip": ip,
-                "model": media_info["model"],
-                "media_loaded": media_info["media_loaded"],
-                "media_width": media_info["media_width"],
-                "media_type": media_info["media_type"],
-                "printer_ready": media_info["printer_ready"],
-                "raw_status": media_info["raw_status"],
-            }
-
         # [LAW:no-silent-failure] map() re-raises a worker's exception here instead of leaving it unread in a Future.
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            printer_results = [details for details in executor.map(get_printer_details, discovered) if details]
+            found = executor.map(_manual_printer_result, (printer["ip"] for printer in discovered))
+            printer_results = [printer for printer in found if printer]
 
         result["printers_found"] = printer_results
         result["success"] = len(result["printers_found"]) > 0
@@ -487,19 +489,8 @@ def test_manual_connection(target: str) -> dict:
             result["error"] = f"Invalid IP address format: {target}"
             return result
 
-        # Get detailed media info with longer timeout for single IP
-        media_info = get_printer_media_info(target, timeout=5)
-
-        if media_info and media_info["is_brother"]:
-            printer_result = {
-                "ip": target,
-                "model": media_info["model"],
-                "media_loaded": media_info["media_loaded"],
-                "media_width": media_info["media_width"],
-                "media_type": media_info["media_type"],
-                "printer_ready": media_info["printer_ready"],
-                "raw_status": media_info["raw_status"],
-            }
+        printer_result = _manual_printer_result(target)
+        if printer_result:
             result["printers_found"].append(printer_result)
             result["success"] = True
         else:
@@ -511,7 +502,8 @@ def test_manual_connection(target: str) -> dict:
 def discover_all_printers() -> dict[str, PrinterInfo]:
     """Discover only actually available printers via auto-discovery"""
     global _discovered_printers
-    _discovered_printers = {}
+    # [LAW:no-silent-failure] a discovery error leaves the last complete registry in place, never a half-built one.
+    printers: dict[str, PrinterInfo] = {}
 
     # Check for USB Brother printers with dynamic identification
     usb_printer_info = verify_usb_printer_available()
@@ -549,7 +541,7 @@ def discover_all_printers() -> dict[str, PrinterInfo]:
             is_connected=True,
             media_info=media_info_text,
         )
-        _discovered_printers["usb_printer"] = printer_info
+        printers["usb_printer"] = printer_info
 
     # Get network ranges for discovery
     ranges = get_local_network_ranges()
@@ -670,9 +662,10 @@ def discover_all_printers() -> dict[str, PrinterInfo]:
         )
 
         printer_id = f"network_{ip.replace('.', '_')}"
-        _discovered_printers[printer_id] = printer_info
+        printers[printer_id] = printer_info
 
-    return _discovered_printers
+    _discovered_printers = printers
+    return printers
 
 
 def _normalize_brother_model_name(discovered_model: str) -> str:

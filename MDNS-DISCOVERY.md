@@ -46,11 +46,12 @@ class BrotherPrinterListener(ServiceListener):
     
     def _parse_brother_printer_info(self, info, service_type, name):
         """Parse Brother printer info from mDNS service using TXT records"""
-        properties = info.properties if info.properties else {}
+        # A key-only TXT entry decodes to None and reads as ""
+        txt = {key: value or "" for key, value in info.decoded_properties.items()}
         
         # Extract model from TXT records
-        model = self._extract_model_from_txt(properties)
-        manufacturer = self._extract_manufacturer_from_txt(properties)
+        model = self._extract_model_from_txt(txt)
+        manufacturer = self._extract_manufacturer_from_txt(txt)
         
         # Verify this is a Brother printer
         if not self._is_brother_printer(model, manufacturer, name):
@@ -160,7 +161,7 @@ if "brother" in name.lower() or "bro" in name.lower():
 ### After (TXT Record-based)
 ```python
 # New approach: protocol-compliant TXT record parsing
-model = properties.get(b"ty", b"").decode("utf-8")  # Official field
+model = txt.get("ty", "")  # Official field
 if model and "QL-810W" in model:
     return True  # Reliable identification
 ```

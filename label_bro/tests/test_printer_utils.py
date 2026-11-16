@@ -34,10 +34,26 @@ def test_usb_probe_without_libusb_reports_and_finds_nothing(monkeypatch, capsys)
     assert "libusb not found" in capsys.readouterr().out
 
 
+def test_failed_discovery_keeps_the_last_complete_registry(monkeypatch):
+    previous = {"network_10_0_0_5": object()}
+    monkeypatch.setattr(printer_utils, "_discovered_printers", previous)
+    monkeypatch.setattr(printer_utils, "verify_usb_printer_available", lambda: None)
+    monkeypatch.setattr(printer_utils, "get_local_network_ranges", list)
+
+    def no_multicast(timeout):
+        raise OSError("Network is unreachable")
+
+    monkeypatch.setattr(printer_utils, "discover_printers_snmp_broadcast", no_multicast)
+
+    with pytest.raises(OSError):
+        printer_utils.discover_all_printers()
+    assert printer_utils._discovered_printers is previous
+
+
 def test_subnet_test_surfaces_a_failed_printer_query(monkeypatch):
     monkeypatch.setattr(printer_utils, "discover_printers_snmp_targeted", lambda ranges, timeout: [{"ip": "10.0.0.5"}])
 
-    def explode(ip, timeout):
+    def explode(ip):
         raise RuntimeError("status read fell over")
 
     monkeypatch.setattr(printer_utils, "get_printer_media_info", explode)
